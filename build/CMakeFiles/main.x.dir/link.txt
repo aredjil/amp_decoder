@@ -1,0 +1,1 @@
+/usr/bin/c++  -DPRINT_F CMakeFiles/main.x.dir/src/main.cpp.o -o main.x 

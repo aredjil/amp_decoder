@@ -1,0 +1,18 @@
+cmake_minimum_required(VERSION 3.10)
+project(AmpProject)
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED True)
+
+# Include directories
+include_directories(include)
+
+# Add executable
+add_executable(main.x src/main.cpp)
+
+option(PRINT "Enable custom feature" OFF)
+
+if(MY_CUSTOM_FLAG)
+    message("Custom feature is enabled!")
+else()
+    message("Custom feature is disabled!")
+endif()

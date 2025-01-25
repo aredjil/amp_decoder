@@ -11,21 +11,20 @@
 /*
 *NOTE: Pass the seed as a paramter the class constructor. 
 */
-template<typename T>
 class AMP{
 
     public: 
-        T L; // Section size of the sparse message 
-        T B; // Alphabet size of the sparse message 
-        T N; 
-        T M;
+        int L; // Section size of the sparse message 
+        int B; // Alphabet size of the sparse message 
+        int N; // Size of the code_message/ Number of rows of the coding matrix F 
+        int M; // number of columns of the coding matrix F
         /*
         The code is divided into L sections of length B
         B is the size of the message alphabet 
         L is the length of the message 
         message ---- > code message (sparse super position code)
         */ 
-        std::vector<T> code_messgae; // Sparse code for the message code_message is 1 dimensional vector with N elements.
+        std::vector<double> code_messgae; // Sparse code for the message code_message is 1 dimensional vector with N elements.
         /*
             Coding matrix 
         */
@@ -33,21 +32,20 @@ class AMP{
         /*
             Code word 
         */
-        std::vector<double> codeword; 
-        AMP(const T &number_of_sections=8, const T & section_size=2)
+        std::vector<double> codeword;
+
+        AMP(const int &number_of_sections=8, const int & section_size=2)
         :L(number_of_sections), B(section_size), gen(dv()){
+            
             this->code_messgae.resize(B * L, 0); // Setting the size of the code
             this->N = this->L * this->B; // Setting the size of the sparse code
         }
         // Generate sparse superposition code
-        template <typename R>
-        void gen_sparse_code(const R& power_allocation=1); 
-        // Generate design matrix 
-        template<typename R> 
-        void gen_design_matrix(const R& rate);
+        void gen_sparse_code(const double& power_allocation=1); 
+        // Generate design matrix  
+        void gen_design_matrix(const double& rate);
         // Generate code word y
-        template <typename R>
-        void gen_codeword(const R& signal_to_noise_ratio);
+        void gen_codeword(const double& signal_to_noise_ratio);
 
     private: 
     // Generate random numbers 
@@ -61,9 +59,7 @@ class AMP{
 /*
     Function to generate sparse superposition codes.
 */
-template <typename T>
-template <typename R>
-void AMP<T>::gen_sparse_code(const R& power_allocation){
+void AMP::gen_sparse_code(const double &power_allocation){
     // Iterate through the sections 
     for(int i=0;i < this->L; i++){
         // Generate a random index between 0 and section size
@@ -75,11 +71,10 @@ void AMP<T>::gen_sparse_code(const R& power_allocation){
 /*
     Function to generate design matrix.
 */
-template <typename T>
-template <typename R>
-void AMP<T>::gen_design_matrix(const R& rate){
+void AMP::gen_design_matrix(const double& rate){
    
-    this->M = (T) (this->N * std::log(this->B)) / (rate * this->B);
+    this->M = (int)(this->N * std::log2(this->B)) / (rate * this->B);
+    
     this->F.resize(this->M * this->N); // Setting the size of the coding matrix  F is N*M matrix 
     double std_dev = std::sqrt(1.0 / this->L); // standard deviation 
     
@@ -93,13 +88,11 @@ void AMP<T>::gen_design_matrix(const R& rate){
 /*
     Generate a codeword y from the code message x using the code matrix F
 */
-template <typename T>
-template <typename R>
-void AMP<T>::gen_codeword(const R& snr){
+void AMP::gen_codeword(const double& snr){
     
     this->codeword.resize(this->M);
 
-    std::vector<R> noise(this->M, 0); // Noise buffer 
+    std::vector<double> noise(this->M, 0); // Noise buffer 
 
     std::normal_distribution<double> dist(0.0, snr);
 

@@ -18,7 +18,10 @@ int main(int argc, char**argv){
     */
     int power_allocation = 2;
     double rate{1.3};
-    AMP<int> my_amp(L, B);
+    double snr{15};
+
+
+    AMP my_amp(L, B);
 
     my_amp.gen_sparse_code(power_allocation);
 
@@ -29,11 +32,11 @@ int main(int argc, char**argv){
     // Test print for the coding matrix F 
     
     #ifdef PRINT_F
-    for (int i = 0; i < my_amp.N; i++)
+    for (int i = 0; i < my_amp.M; i++)
     {   
-        for (int j = 0; j < my_amp.M; j++)
+        for (int j = 0; j < my_amp.N; j++)
         {
-            std::cout << " "<< my_amp.F[i* my_amp.M+j]<<" ";
+            std::cout << " "<< my_amp.F[i* my_amp.N+j]<<" ";
         }
         std::cout<<std::endl;
     }
@@ -50,5 +53,14 @@ int main(int argc, char**argv){
         
     }
     #endif 
-    return 0;
+    my_amp.gen_codeword(snr);
+    std::cout<<"The size of the codeword is: "<<my_amp.codeword.size()<<std::endl;
+    std::cout<<"The code word is: \n"; 
+    for (auto val: my_amp.codeword)
+    {
+        std::cout<<" "<<val<<" ";
+    }
+    std::cout<<std::endl;
+    
+    return 0;   
 }

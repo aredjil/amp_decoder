@@ -3,6 +3,12 @@ project(AmpProject)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
+
+# Find the BLAS library
+find_package(BLAS REQUIRED)
+
+add_compile_options(-Wall -Wextra -pedantic -Wshadow)
+
 option(PRINT_C "Print Code" OFF)
 if(PRINT_C)
     message("Custom feature is enabled!")
@@ -25,4 +31,5 @@ include_directories(include)
 # Add executable
 add_executable(main.x src/main.cpp)
 
+target_link_libraries(main.x ${BLAS_LIBRARIES})
 

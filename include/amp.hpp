@@ -7,43 +7,54 @@
 #include<algorithm> // Operations on C++ containers
 #include<cblas.h> // cblas for linear algebra operations 
 
+
+/*
+*NOTE: Pass the seed as a paramter the class constructor. 
+*/
 template<typename T>
 class AMP{
-    private: 
-    // Generate random numbers 
-    std::random_device dv; // Random seed 
-    std::mt19937 gen;      // Pseudo-number generator 
 
     public: 
-    T L; // Section size of the sparse message 
-    T B; // Alphabet size of the sparse message 
-    T N; 
-    T M;
-    /*
-    The code is divided into L sections of length B
-    B is the size of the message alphabet 
-    L is the length of the message 
-    message ---- > code message (sparse super position code)
-    */ 
-    std::vector<T> code_messgae; // Sparse code for the message code_message is 1 dimensional vector with N elements.
-    /*
-    Coding matrix 
-    */
-    std::vector<double> F; // normal random matrix with 0 mean and 1/sqrt(L) std
-    
-    AMP(const T &number_of_sections=8, const T & section_size=2):L(number_of_sections), B(section_size), gen(dv()){
-        this->code_messgae.resize(B * L, 0); // Setting the size of the code
-        this->N = this->L * this->B; // Setting the size of the sparse code
-    }
-    // Generate sparse superposition code
-    template <typename R>
-    void gen_sparse_code(const R& power_allocation=1); 
-    // Generate design matrix 
-    template<typename R> 
-    void gen_design_matrix(const R& rate);
-    // Generate code word y
-    template <typename R>
-    void gen_codeword(const R& signal_to_noise_ratio);
+        T L; // Section size of the sparse message 
+        T B; // Alphabet size of the sparse message 
+        T N; 
+        T M;
+        /*
+        The code is divided into L sections of length B
+        B is the size of the message alphabet 
+        L is the length of the message 
+        message ---- > code message (sparse super position code)
+        */ 
+        std::vector<T> code_messgae; // Sparse code for the message code_message is 1 dimensional vector with N elements.
+        /*
+            Coding matrix 
+        */
+        std::vector<double> F; // normal random matrix with 0 mean and 1/sqrt(L) std
+        /*
+            Code word 
+        */
+        std::vector<double> codeword; 
+        AMP(const T &number_of_sections=8, const T & section_size=2)
+        :L(number_of_sections), B(section_size), gen(dv()){
+            this->code_messgae.resize(B * L, 0); // Setting the size of the code
+            this->N = this->L * this->B; // Setting the size of the sparse code
+        }
+        // Generate sparse superposition code
+        template <typename R>
+        void gen_sparse_code(const R& power_allocation=1); 
+        // Generate design matrix 
+        template<typename R> 
+        void gen_design_matrix(const R& rate);
+        // Generate code word y
+        template <typename R>
+        void gen_codeword(const R& signal_to_noise_ratio);
+
+    private: 
+    // Generate random numbers 
+        std::random_device dv; // Random seed 
+        std::mt19937 gen;      // Pseudo-number generator 
+
+
 
 };
 
@@ -73,17 +84,10 @@ void AMP<T>::gen_design_matrix(const R& rate){
     double std_dev = std::sqrt(1.0 / this->L); // standard deviation 
     
     std::normal_distribution<double> dist(0.0, std_dev);
-    
+    /*
+        Fill the matrix with gaussian enteries 
+    */
     std::generate(this->F.begin(), this->F.end(), [&](){return dist(this->gen);});
-
-    // for (int i = 0; i < this->M; ++i)
-    // {
-    //     for (int j = 0; j < this->N; ++j)
-    //     {
-    //         this->F[i*this->N+j] = dist(gen);
-    //     }
-        
-    // }
     
 };
 /*
@@ -93,14 +97,25 @@ template <typename T>
 template <typename R>
 void AMP<T>::gen_codeword(const R& snr){
     
+    this->codeword.resize(this->M);
+
     std::vector<R> noise(this->M, 0); // Noise buffer 
-    std::vector<R> codeword(this->M, 0); // codeword buffer
 
     std::normal_distribution<double> dist(0.0, snr);
 
     std::generate(noise.begin(), noise.end(), [&](){return dist(this->gen);});
-
-
+    
+    // Generate the codeword
+    cblas_dgemv(
+        CblasRowMajor, 
+        CblasNoTrans, 
+        this->M, this->N, 
+        1.0, 
+        this->F.data(), this->N,
+        this->code_messgae.data(), 1,
+        0.0, 
+        this->codeword.data(), 1.0         
+    );
 
 }
 

@@ -5,7 +5,6 @@
 #include "../include/amp.hpp"
 #include "../include/utils.hpp"
 /**
- * NOTE: Take section length and alphabet size as a command line input
  * NOTE: add a help option later (not urgent)
  * NOTE: Immplement the algorithms
  * NOTE: Use templates to make things easier
@@ -13,7 +12,7 @@
 
 int main(int argc, char **argv)
 {
-
+    std::cout << std::scientific<< std::setprecision(pre); // Ouput format 
     int num_sections{2};      // Number of sections per message
     int section_size{4};      // Size of a single section
     double power_allocation{1.0}; // Power allocation value
@@ -44,7 +43,7 @@ int main(int argc, char **argv)
         }
         if((std::string(argv[i]) == "-h" || std::string(argv[i]) == "--help"))
         {
-            std::cout<<"Help message not immplemented yet \n";
+            std::cout<<"Help message not immplemented yet :) \n";
             std::exit(0);
         }
     }

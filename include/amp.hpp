@@ -7,10 +7,15 @@
 #include <algorithm> // Operations on C++ containers
 #include <cblas.h>   // cblas for linear algebra operations
 #include <iomanip>
-#include <numeric> 
+#include <numeric>
 
 // precison of the output
 #define pre 4
+/**
+ * TODO: immplement the denoising function denoise_a();
+ * TODO:immplement the denoising function denoise_v();
+ * TODO: immplement a function to compute the section error rate 
+ */
 
 class AMP
 {
@@ -69,11 +74,16 @@ public:
     void print_design_matrix() const;
     void print_code_word() const;
 
-    // Compute the first line of the algorithm 
+    // Compute the first line of the algorithm
     void compute_dgemv(std::vector<double> &F_2, std::vector<double> &v, std::vector<double> &V);
-    void compute_onsegar(std::vector<double> codeword, std::vector<double> omega_old, std::vector<double> V_new, std::vector<double> V_old, std::vector<double> Fa,std::vector<double> &omega_new); 
-    // Compute cavity variance 
-    void compute_cavity_var(std::vector<double> F_2, std::vector<double> V_new, std::vector<double>&sigma_new);
+    void compute_onsegar(std::vector<double> codeword, std::vector<double> omega_old, std::vector<double> V_new, std::vector<double> V_old, std::vector<double> Fa, std::vector<double> &omega_new);
+    // Compute cavity variance
+    void compute_cavity_var(std::vector<double> F_2, std::vector<double> V_new, std::vector<double> &sigma_new);
+    // Compute cavity mean
+    void compute_cavity_mean(std::vector<double> a_old, std::vector<double> sigma_new, std::vector<double> V_new, std::vector<double> omega_new, std::vector<double> &cavity_mean);
+
+    // Compute the message estimation 
+    void denoise_a(std::vector<double> sigma_new, std::vector<double> cavity_mean, std::vector<double> &a_new);
     // Solver current immplementation just to check output of helper functions
     void solve();
 
@@ -116,8 +126,7 @@ void AMP::gen_design_matrix()
         Fill the matrix with gaussian enteries
     */
     std::generate(this->F.begin(), this->F.end(), [&]()
-                  { return dist(this->gen); }
-                );
+                  { return dist(this->gen); });
 };
 /*
     Generate a codeword y from the code message x using the code matrix F
@@ -132,8 +141,7 @@ void AMP::gen_codeword()
     std::normal_distribution<double> dist(0.0, snr);
 
     std::generate(noise.begin(), noise.end(), [&]()
-                  { return dist(this->gen); }
-                );
+                  { return dist(this->gen); });
 
     // Generate the codeword
     cblas_dgemv(
@@ -149,7 +157,6 @@ void AMP::gen_codeword()
 // print the message
 void AMP::print_code_message() const
 {
-    std::cout << std::fixed << std::setprecision(pre);
     for (int i = 0; i < L; i++)
     {
         for (int j = 0; j < B; j++)
@@ -162,7 +169,6 @@ void AMP::print_code_message() const
 // print the codeword
 void AMP::print_code_word() const
 {
-    std::cout << std::fixed << std::setprecision(pre);
     for (int i = 0; i < M; i++)
     {
         std::cout << " " << codeword[i] << " ";
@@ -173,7 +179,6 @@ void AMP::print_code_word() const
 // Print design matrix
 void AMP::print_design_matrix() const
 {
-    std::cout << std::fixed << std::setprecision(pre);
     for (int i = 0; i < M; i++)
     {
         for (int j = 0; j < N; j++)
@@ -186,9 +191,9 @@ void AMP::print_design_matrix() const
 
 // Solver immplementation
 
-/** 
+/**
  * Compute V_{\mu}^{t} = \sum_{i}F_{\mu i}^2 v_{i}^{t}
-*/ 
+ */
 void AMP::compute_dgemv(std::vector<double> &F_2, std::vector<double> &v, std::vector<double> &V)
 {
     cblas_dgemv(
@@ -201,64 +206,64 @@ void AMP::compute_dgemv(std::vector<double> &F_2, std::vector<double> &v, std::v
         0.0,
         V.data(), 1.0);
 }
-// Compute onsegar term 
-void AMP::compute_onsegar(std::vector<double> codeword, std::vector<double> omega_old, std::vector<double> V_new, std::vector<double> V_old, std::vector<double> Fa,std::vector<double> &omega_new)
-{   double snr_inv = 1.0 / this->snr;
-    std::vector<double> sub(M, 0.0); // Variable to hold the result of y-omega 
+// Compute onsegar term
+void AMP::compute_onsegar(std::vector<double> codeword, std::vector<double> omega_old, std::vector<double> V_new, std::vector<double> V_old, std::vector<double> Fa, std::vector<double> &omega_new)
+{
+    double snr_inv = 1.0 / this->snr;
+    std::vector<double> sub(M, 0.0);  // Variable to hold the result of y-omega
     std::vector<double> frac(M, 0.0); // Variable to hold the result of V_new /(1\snr + V_old)
     std::vector<double> onsegar_term(M, 0.0);
-    // Compute y - omega 
+    // Compute y - omega
     std::transform(
-        codeword.begin(), 
-        codeword.end(), 
-        omega_old.begin(), 
-        sub.begin(), 
-        std::minus<int>()
-    );
+        codeword.begin(),
+        codeword.end(),
+        omega_old.begin(),
+        sub.begin(),
+        std::minus<int>());
     // Compute V_{\mu}^{t+1} / (1\snr + V_{\mu}^{t})
     std::transform(
-        V_old.begin(), 
-        V_old.end(), 
-        V_new.begin(), 
-        frac.begin(), 
-        [snr_inv](int v_old, int v_new){ return v_new /(v_old + snr_inv);}
-    );
-    // Compute onsegar term 
+        V_old.begin(),
+        V_old.end(),
+        V_new.begin(),
+        frac.begin(),
+        [snr_inv](int v_old, int v_new)
+        { return v_new / (v_old + snr_inv); });
+    // Compute onsegar term
     std::transform(
-        sub.begin(), 
-        sub.end(), 
-        frac.begin(), 
-        onsegar_term.begin(), 
-        [](int a, int b){ return a * b;}
-    );
-    // Compute omega_new 
+        sub.begin(),
+        sub.end(),
+        frac.begin(),
+        onsegar_term.begin(),
+        [](int a, int b)
+        { return a * b; });
+    // Compute omega_new
     std::transform(
-        Fa.begin(), 
-        Fa.end(), 
-        onsegar_term.begin(), 
-        omega_new.begin(), 
-        [](int a, int b){ return a - b;}
-    );
+        Fa.begin(),
+        Fa.end(),
+        onsegar_term.begin(),
+        omega_new.begin(),
+        [](int a, int b)
+        { return a - b; });
 }
 
-// Compute cavity variance 
-void AMP::compute_cavity_var(std::vector<double> F_2, std::vector<double> V_new, std::vector<double>&sigma_new)
+// Compute cavity variance
+void AMP::compute_cavity_var(std::vector<double> F_2, std::vector<double> V_new, std::vector<double> &sigma_new)
 {
-    double snr_inv = 1.0/ this->snr; 
+    double snr_inv = 1.0 / this->snr;
     std::vector<double> V_inv(M);
-    // 1. Compute the first term 
+    // 1. Compute the first term
     std::transform(
         V_new.begin(),
         V_new.end(),
-        V_inv.begin(), 
-        [snr_inv](double v_new){
-            return 1.0 /(snr_inv + v_new);
-        }
-    );
-    // 2. Compute the second term V-Inv . F**2 
+        V_inv.begin(),
+        [snr_inv](double v_new)
+        {
+            return 1.0 / (snr_inv + v_new);
+        });
+    // 2. Compute the second term V-Inv . F**2
     /**
      * NOTE: this immplementation is a bit ambgious and it might be a source of bugs
-     * Fix it later :) 
+     * Fix it later :)
      */
     cblas_dgemv(
         CblasColMajor,
@@ -266,55 +271,133 @@ void AMP::compute_cavity_var(std::vector<double> F_2, std::vector<double> V_new,
         this->M, this->N,
         1.0,
         F_2.data(), this->M,
-        V_inv.data(), 1,
+        V_inv.data(), 1.0,
         0.0,
         sigma_new.data(), 1.0);
-    // 3. Compute the square of the result 
-    std::transform( 
+    // 3. Compute the square of the result
+    std::transform(
         sigma_new.begin(),
-        sigma_new.end(), 
-        sigma_new.begin(), 
-        [](double x){ return x * x; }
-    ); 
+        sigma_new.end(),
+        sigma_new.begin(),
+        [](double x)
+        { return 1.0 / (x * x); });
+}
+// Compute cavity mean
+void AMP::compute_cavity_mean(std::vector<double> a_old, std::vector<double> sigma_new, std::vector<double> V_new, std::vector<double> omega_new, std::vector<double> &cavity_mean)
+{
+    double snr_inv = 1.0 / this->snr;
+
+    std::vector<double> V_inv(M);
+    std::vector<double> sub(M);
+    std::vector<double> frac(M);
+
+
+    std::vector<double> FV_inv(N);
+    std::vector<double> sigmaF_iv(N);
+
+    // Compute 1/(1/snr + V_{\mu}^{t})
+    std::transform(
+        V_new.begin(),
+        V_new.end(),
+        V_inv.begin(),
+        [snr_inv](auto v)
+        { return 1.0 / (snr_inv + v); });
+
+    // Compute the fraction
+    std::transform(
+        codeword.begin(), 
+        codeword.end(), 
+        omega_new.begin(), 
+        sub.begin(), 
+        [](double y, double omega){
+            return y-omega;
+        }
+    );
+
+
+    std::transform(
+        sub.begin(), 
+        sub.end(), 
+        V_inv.begin(), 
+        frac.begin(), //Store the result here  
+        [](double a, double b){
+            return a / b;
+        }
+    );
+
+    // Compute F.V_inv
+    // compute_dgemv(F, V_inv, FV_inv);
+    cblas_dgemv(
+        CblasRowMajor,
+        CblasNoTrans,
+        this->M, this->N,
+        1.0,
+        F.data(), this->N,
+        frac.data(), 1.0,
+        0.0,
+        FV_inv.data(), 1.0);
+    // Compute SigmaF
+    std::transform(
+        sigma_new.begin(),
+        sigma_new.end(),
+        FV_inv.begin(),
+        sigmaF_iv.begin(),
+        [](auto sigma, auto fv_inv)
+        { return sigma * fv_inv; });
+    // Compute the cavity mean R_{i}^{t+1}
+    std::transform(
+        a_old.begin(),
+        a_old.end(),
+        sigmaF_iv.begin(),
+        cavity_mean.begin(),
+        [](auto a, auto b)
+        { return a + b;});
+}
+// COmpute the estimate of the message a 
+void AMP::denoise_a(std::vector<double> sigma_new, std::vector<double> cavity_mean, std::vector<double> &a_new)
+{
+ return;   
 }
 
+// Solver
+void AMP::solve()
+{
 
-// Solver 
-void AMP::solve(){
+    std::vector<double> F_2(F); // Piecewise square of design matrix F
+    std::vector<double> v(N, 1.0 / (B * snr));
 
-    std::vector<double> F_2(F); // Piecewise square of design matrix F 
-    std::vector<double> v(N, 1.0/(B*snr));
-
-    std::vector<double> V_new(M); // vector to hold the result of the matrix multiplication  
+    std::vector<double> V_new(M); // vector to hold the result of the matrix multiplication
     std::vector<double> V_old(M);
 
     std::vector<double> Fa(M, 0.0); // Store the result of matrix vector multiplication
 
-    std::vector<double> a(N, 0.0); // Store the estimation of the message 
-    
-    std::vector<double> omega_old(codeword); // Old value of omega 
-    std::vector<double> omega_new(M); // New value of omega
-    
-    std::vector<double> sigma_new(N, 0.0);
-    
-    // Compute F_{ij}**2
-    std::transform( 
-        F_2.begin(),
-        F_2.end(), 
-        F_2.begin(), 
-        [](double x){ return x * x; }
-    ); 
-    //Compute V_{\mu}^{t} = \sum_{i}F_{\mu i}^2 v_{i}^{t}
-    compute_dgemv(F_2, v, V_new); 
-    //Compute F.a = \sum_{i}F_{\mu i} a_{i}^{t}
-    compute_dgemv(F, a, Fa); 
-    // Compute omege_new 
-    compute_onsegar(codeword, omega_old, V_new, V_old, Fa, omega_new);
-    // Compute the cavity variance 
-    compute_cavity_var(F_2, V_new, sigma_new);
-    for(auto term:sigma_new)
-        std::cout<<" "<<term<<"\n";
+    std::vector<double> a_old(N, 0.0); // Store the estimation of the message
 
+    std::vector<double> omega_old(codeword); // Old value of omega
+    std::vector<double> omega_new(M);        // New value of omega
+
+    std::vector<double> sigma_new(N, 0.0);
+    std::vector<double> cavity_mean(N, 0.0);
+
+    // Compute F_{ij}**2
+    std::transform(
+        F_2.begin(),
+        F_2.end(),
+        F_2.begin(),
+        [](double x)
+        { return x * x; });
+    // Compute V_{\mu}^{t} = \sum_{i}F_{\mu i}^2 v_{i}^{t}
+    compute_dgemv(F_2, v, V_new);
+    // Compute F.a = \sum_{i}F_{\mu i} a_{i}^{t}
+    compute_dgemv(F, a_old, Fa);
+    // Compute omege_new
+    compute_onsegar(codeword, omega_old, V_new, V_old, Fa, omega_new);
+    // Compute the cavity variance
+    compute_cavity_var(F_2, V_new, sigma_new);
+    // Compute the cavity mean 
+    compute_cavity_mean(a_old, sigma_new, V_new, omega_new, cavity_mean); 
+    // Compute the message estimate 
+    // To be immplemented 
 }
 
 #endif // AMP_H

@@ -6,7 +6,9 @@
 #include <cmath>     // sqrt and log functions
 #include <algorithm> // Operations on C++ containers
 #include <cblas.h>   // cblas for linear algebra operations
-
+#include<iomanip>
+// precison of the output 
+#define pre 4
 /*
  *NOTE: Pass the seed as a paramter the class constructor.
  */
@@ -18,6 +20,9 @@ public:
     int B; // Alphabet size of the sparse message
     int N; // Size of the code_message/ Number of rows of the coding matrix F
     int M; // number of columns of the coding matrix F
+    double c; // power allocation value
+    double r;// communication rate 
+    double snr; // signla to noise ratio 
     /*
     The code is divided into L sections of length B
     B is the size of the message alphabet
@@ -34,10 +39,19 @@ public:
     */
     std::vector<double> codeword;
 
-    AMP(const int &number_of_sections = 8, const int &section_size = 2)
-        :L(number_of_sections)
-        ,B(section_size)
-        ,gen(dv())
+    AMP(const int &number_of_sections, 
+        const int &section_size, 
+        const double &power_allocation, 
+        double const &rate,
+        double const&signal_to_noise_ration
+    )
+    
+        :L(number_of_sections) // NUmber of sections
+        ,B(section_size) // Section size
+        ,c(power_allocation)
+        ,r(rate) // Communication rate 
+        ,snr(signal_to_noise_ration)
+        ,gen(dv()) // Random number generator
     {
 
         this->code_messgae.resize(B * L, 0); // Setting the size of the code
@@ -47,21 +61,13 @@ public:
         Coding the message
      */
 
-    void gen_sparse_code(const double &power_allocation = 1.0); // Generate sparse superposition code
-    void gen_design_matrix(const double &rate);                 // Generate design matrix
-    void gen_codeword(const double &signal_to_noise_ratio);     // Generate code word y
-    /*
-        Decoding the codeword
-    */
-    // void get_decoded_message(const double &snr, const double &rate, const int &t_max, const double &error_th, const double &power_allocation);
-    /*
-        Compute Matrix-Vector Multiplication
-    */
-    std::vector<double> compute_matrix_vector_multiplication(const std::vector<double> &Mat, const std::vector<double> &Vec);
-    /*
-        compute onsager term
-    */
-    std::vector<double> compute_onsager_term(const std::vector<double> &V, const std::vector<double> &V_old, const std::vector<double> &z_old, const double &snr);
+    void gen_sparse_code();                                 // Generate sparse superposition code
+    void gen_design_matrix();             // Generate design matrix
+    void gen_codeword(); // Generate code word y
+    // Printing functions
+    void print_code_message() const;
+    void print_design_matrix() const; 
+    void print_code_word() const;
 
 private:
     // Generate random numbers
@@ -72,24 +78,27 @@ private:
 /*
     Function to generate sparse superposition codes.
 */
-void AMP::gen_sparse_code(const double &power_allocation)
+void AMP::gen_sparse_code()
 {
+    // Generate a random index between 0 and section size
+    double lower_bound{0.0};
+    double upper_bound = static_cast<double>(this->B) - 1.0;
+    std::uniform_real_distribution<double> dist(lower_bound, upper_bound);
     // Iterate through the sections
     for (int i = 0; i < this->L; i++)
     {
-        // Generate a random index between 0 and section size
-        std::uniform_int_distribution<int> dist(0, this->B - 1);
+
         int j = dist(gen);
-        this->code_messgae[i * this->B + j] = power_allocation;
+        this->code_messgae[i * this->B + j] = c;
     }
 }
 /*
     Function to generate design matrix.
 */
-void AMP::gen_design_matrix(const double &rate)
+void AMP::gen_design_matrix()
 {
 
-    this->M = (int)(this->N * std::log2(this->B)) / (rate * this->B);
+    this->M = (int)(this->N * std::log2(this->B)) / (r * this->B);
 
     this->F.resize(this->M * this->N);         // Setting the size of the coding matrix  F is N*M matrix
     double std_dev = std::sqrt(1.0 / this->L); // standard deviation
@@ -104,7 +113,7 @@ void AMP::gen_design_matrix(const double &rate)
 /*
     Generate a codeword y from the code message x using the code matrix F
 */
-void AMP::gen_codeword(const double &snr)
+void AMP::gen_codeword()
 {
 
     this->codeword.resize(this->M);
@@ -127,7 +136,42 @@ void AMP::gen_codeword(const double &snr)
         0.0,
         this->codeword.data(), 1.0);
 }
+// print the message
+void AMP::print_code_message() const
+{
+    std::cout<<std::fixed<<std::setprecision(pre);
+    for (int i = 0; i < L; i++)
+    {
+        for (int j = 0; j < B; j++)
+        {
+            std::cout << " " << code_messgae[i * B + j] << " ";
+        }
+        std::cout << std::endl;
+    }
+}
+// print the codeword
+void AMP::print_code_word() const
+{
+    std::cout<<std::fixed<<std::setprecision(pre);
+    for (int i = 0; i < M; i++)
+    {
+        std::cout << " " << codeword[i] << " ";
+    }
+    std::cout << "\n";
+}
 
-
+// Print design matrix 
+void AMP::print_design_matrix() const
+{
+    std::cout<<std::fixed<<std::setprecision(pre);
+    for (int i = 0; i < M; i++)
+    {
+        for (int j = 0; j < N; j++)
+        {
+            std::cout << " " << F[i * N + j] << " ";
+        }
+        std::cout << std::endl;
+    }
+}
 
 #endif // AMP_H

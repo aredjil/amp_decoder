@@ -72,6 +72,8 @@ public:
     // Compute the first line of the algorithm 
     void compute_dgemv(std::vector<double> &F_2, std::vector<double> &v, std::vector<double> &V);
     void compute_onsegar(std::vector<double> codeword, std::vector<double> omega_old, std::vector<double> V_new, std::vector<double> V_old, std::vector<double> Fa,std::vector<double> &omega_new); 
+    // Compute cavity variance 
+    void compute_cavity_var(std::vector<double> F_2, std::vector<double> V_new, std::vector<double>&sigma_new);
     // Solver current immplementation just to check output of helper functions
     void solve();
 
@@ -239,6 +241,42 @@ void AMP::compute_onsegar(std::vector<double> codeword, std::vector<double> omeg
     );
 }
 
+// Compute cavity variance 
+void AMP::compute_cavity_var(std::vector<double> F_2, std::vector<double> V_new, std::vector<double>&sigma_new)
+{
+    double snr_inv = 1.0/ this->snr; 
+    std::vector<double> V_inv(M);
+    // 1. Compute the first term 
+    std::transform(
+        V_new.begin(),
+        V_new.end(),
+        V_inv.begin(), 
+        [snr_inv](double v_new){
+            return 1.0 /(snr_inv + v_new);
+        }
+    );
+    // 2. Compute the second term V-Inv . F**2 
+    /**
+     * NOTE: this immplementation is a bit ambgious and it might be a source of bugs
+     * Fix it later :) 
+     */
+    cblas_dgemv(
+        CblasColMajor,
+        CblasTrans,
+        this->M, this->N,
+        1.0,
+        F_2.data(), this->M,
+        V_inv.data(), 1,
+        0.0,
+        sigma_new.data(), 1.0);
+    // 3. Compute the square of the result 
+    std::transform( 
+        sigma_new.begin(),
+        sigma_new.end(), 
+        sigma_new.begin(), 
+        [](double x){ return x * x; }
+    ); 
+}
 
 
 // Solver 
@@ -246,12 +284,19 @@ void AMP::solve(){
 
     std::vector<double> F_2(F); // Piecewise square of design matrix F 
     std::vector<double> v(N, 1.0/(B*snr));
+
     std::vector<double> V_new(M); // vector to hold the result of the matrix multiplication  
     std::vector<double> V_old(M);
+
     std::vector<double> Fa(M, 0.0); // Store the result of matrix vector multiplication
+
     std::vector<double> a(N, 0.0); // Store the estimation of the message 
+    
     std::vector<double> omega_old(codeword); // Old value of omega 
     std::vector<double> omega_new(M); // New value of omega
+    
+    std::vector<double> sigma_new(N, 0.0);
+    
     // Compute F_{ij}**2
     std::transform( 
         F_2.begin(),
@@ -265,6 +310,10 @@ void AMP::solve(){
     compute_dgemv(F, a, Fa); 
     // Compute omege_new 
     compute_onsegar(codeword, omega_old, V_new, V_old, Fa, omega_new);
+    // Compute the cavity variance 
+    compute_cavity_var(F_2, V_new, sigma_new);
+    for(auto term:sigma_new)
+        std::cout<<" "<<term<<"\n";
 
 }
 

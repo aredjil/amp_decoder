@@ -6,21 +6,23 @@
 #include <cmath>     // sqrt and log functions
 #include <algorithm> // Operations on C++ containers
 #include <cblas.h>   // cblas for linear algebra operations
-#include<iomanip>
-// precison of the output 
+#include <iomanip>
+#include <numeric> 
+
+// precison of the output
 #define pre 4
 
 class AMP
 {
 
 public:
-    int L; // Section size of the sparse message
-    int B; // Alphabet size of the sparse message
-    int N; // Size of the code_message/ Number of rows of the coding matrix F
-    int M; // number of columns of the coding matrix F
-    double c; // power allocation value
-    double r;// communication rate 
-    double snr; // signla to noise ratio 
+    int L;      // Section size of the sparse message
+    int B;      // Alphabet size of the sparse message
+    int N;      // Size of the code_message/ Number of rows of the coding matrix F
+    int M;      // number of columns of the coding matrix F
+    double c;   // power allocation value
+    double r;   // communication rate
+    double snr; // signla to noise ratio
     /*
     The code is divided into L sections of length B
     B is the size of the message alphabet
@@ -37,19 +39,19 @@ public:
     */
     std::vector<double> codeword;
 
-    AMP(const int &number_of_sections, 
-        const int &section_size, 
-        const double &power_allocation, 
+    AMP(const int &number_of_sections,
+        const int &section_size,
+        const double &power_allocation,
         double const &rate,
-        double const&signal_to_noise_ration
-    )
-    
-        :L(number_of_sections) // NUmber of sections
-        ,B(section_size) // Section size
-        ,c(power_allocation)
-        ,r(rate) // Communication rate 
-        ,snr(signal_to_noise_ration)
-        ,gen(dv()) // Random number generator
+        double const &signal_to_noise_ration)
+
+        : L(number_of_sections) // NUmber of sections
+          ,
+          B(section_size) // Section size
+          ,
+          c(power_allocation), r(rate) // Communication rate
+          ,
+          snr(signal_to_noise_ration), gen(dv()) // Random number generator
     {
 
         this->code_messgae.resize(B * L, 0); // Setting the size of the code
@@ -59,16 +61,19 @@ public:
         Coding the message
      */
 
-    void gen_sparse_code();                                 // Generate sparse superposition code
-    void gen_design_matrix();             // Generate design matrix
-    void gen_codeword(); // Generate code word y
+    void gen_sparse_code();   // Generate sparse superposition code
+    void gen_design_matrix(); // Generate design matrix
+    void gen_codeword();      // Generate code word y
     // Printing functions
     void print_code_message() const;
-    void print_design_matrix() const; 
+    void print_design_matrix() const;
     void print_code_word() const;
 
-    // Solver immplementation 
-
+    // Compute the first line of the algorithm 
+    void compute_dgemv(std::vector<double> &F_2, std::vector<double> &v, std::vector<double> &V);
+    void compute_onsegar(std::vector<double> codeword, std::vector<double> omega_old, std::vector<double> V_new, std::vector<double> V_old, std::vector<double> Fa,std::vector<double> &omega_new); 
+    // Solver current immplementation just to check output of helper functions
+    void solve();
 
 private:
     // Generate random numbers
@@ -109,7 +114,8 @@ void AMP::gen_design_matrix()
         Fill the matrix with gaussian enteries
     */
     std::generate(this->F.begin(), this->F.end(), [&]()
-                  { return dist(this->gen); });
+                  { return dist(this->gen); }
+                );
 };
 /*
     Generate a codeword y from the code message x using the code matrix F
@@ -124,7 +130,8 @@ void AMP::gen_codeword()
     std::normal_distribution<double> dist(0.0, snr);
 
     std::generate(noise.begin(), noise.end(), [&]()
-                  { return dist(this->gen); });
+                  { return dist(this->gen); }
+                );
 
     // Generate the codeword
     cblas_dgemv(
@@ -140,7 +147,7 @@ void AMP::gen_codeword()
 // print the message
 void AMP::print_code_message() const
 {
-    std::cout<<std::fixed<<std::setprecision(pre);
+    std::cout << std::fixed << std::setprecision(pre);
     for (int i = 0; i < L; i++)
     {
         for (int j = 0; j < B; j++)
@@ -153,7 +160,7 @@ void AMP::print_code_message() const
 // print the codeword
 void AMP::print_code_word() const
 {
-    std::cout<<std::fixed<<std::setprecision(pre);
+    std::cout << std::fixed << std::setprecision(pre);
     for (int i = 0; i < M; i++)
     {
         std::cout << " " << codeword[i] << " ";
@@ -161,10 +168,10 @@ void AMP::print_code_word() const
     std::cout << "\n";
 }
 
-// Print design matrix 
+// Print design matrix
 void AMP::print_design_matrix() const
 {
-    std::cout<<std::fixed<<std::setprecision(pre);
+    std::cout << std::fixed << std::setprecision(pre);
     for (int i = 0; i < M; i++)
     {
         for (int j = 0; j < N; j++)
@@ -175,8 +182,90 @@ void AMP::print_design_matrix() const
     }
 }
 
+// Solver immplementation
 
-// Solver immplementation 
+/** 
+ * Compute V_{\mu}^{t} = \sum_{i}F_{\mu i}^2 v_{i}^{t}
+*/ 
+void AMP::compute_dgemv(std::vector<double> &F_2, std::vector<double> &v, std::vector<double> &V)
+{
+    cblas_dgemv(
+        CblasRowMajor,
+        CblasNoTrans,
+        this->M, this->N,
+        1.0,
+        F_2.data(), this->N,
+        v.data(), 1,
+        0.0,
+        V.data(), 1.0);
+}
+// Compute onsegar term 
+void AMP::compute_onsegar(std::vector<double> codeword, std::vector<double> omega_old, std::vector<double> V_new, std::vector<double> V_old, std::vector<double> Fa,std::vector<double> &omega_new)
+{   double snr_inv = 1.0 / this->snr;
+    std::vector<double> sub(M, 0.0); // Variable to hold the result of y-omega 
+    std::vector<double> frac(M, 0.0); // Variable to hold the result of V_new /(1\snr + V_old)
+    std::vector<double> onsegar_term(M, 0.0);
+    // Compute y - omega 
+    std::transform(
+        codeword.begin(), 
+        codeword.end(), 
+        omega_old.begin(), 
+        sub.begin(), 
+        std::minus<int>()
+    );
+    // Compute V_{\mu}^{t+1} / (1\snr + V_{\mu}^{t})
+    std::transform(
+        V_old.begin(), 
+        V_old.end(), 
+        V_new.begin(), 
+        frac.begin(), 
+        [snr_inv](int v_old, int v_new){ return v_new /(v_old + snr_inv);}
+    );
+    // Compute onsegar term 
+    std::transform(
+        sub.begin(), 
+        sub.end(), 
+        frac.begin(), 
+        onsegar_term.begin(), 
+        [](int a, int b){ return a * b;}
+    );
+    // Compute omega_new 
+    std::transform(
+        Fa.begin(), 
+        Fa.end(), 
+        onsegar_term.begin(), 
+        omega_new.begin(), 
+        [](int a, int b){ return a - b;}
+    );
+}
 
+
+
+// Solver 
+void AMP::solve(){
+
+    std::vector<double> F_2(F); // Piecewise square of design matrix F 
+    std::vector<double> v(N, 1.0/(B*snr));
+    std::vector<double> V_new(M); // vector to hold the result of the matrix multiplication  
+    std::vector<double> V_old(M);
+    std::vector<double> Fa(M, 0.0); // Store the result of matrix vector multiplication
+    std::vector<double> a(N, 0.0); // Store the estimation of the message 
+    std::vector<double> omega_old(codeword); // Old value of omega 
+    std::vector<double> omega_new(M); // New value of omega
+    // Compute F_{ij}**2
+    std::transform( 
+        F_2.begin(),
+        F_2.end(), 
+        F_2.begin(), 
+        [](double x){ return x * x; }
+    ); 
+    //Compute V_{\mu}^{t} = \sum_{i}F_{\mu i}^2 v_{i}^{t}
+    compute_dgemv(F_2, v, V_new); 
+    //Compute F.a = \sum_{i}F_{\mu i} a_{i}^{t}
+    compute_dgemv(F, a, Fa); 
+    // Compute omege_new 
+    compute_onsegar(codeword, omega_old, V_new, V_old, Fa, omega_new);
+
+}
 
 #endif // AMP_H

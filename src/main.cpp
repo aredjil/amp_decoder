@@ -82,6 +82,9 @@ int main(int argc, char **argv)
     my_amp.print_code_word();
     std::cout << "\n\n";
 
-    
+    std::cout<<"Testing the first function\n\n";
+    my_amp.solve();
+    std::cout << "\n\n";
+
     return 0;
 }

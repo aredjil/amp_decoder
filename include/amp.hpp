@@ -9,9 +9,7 @@
 #include<iomanip>
 // precison of the output 
 #define pre 4
-/*
- *NOTE: Pass the seed as a paramter the class constructor.
- */
+
 class AMP
 {
 
@@ -68,6 +66,9 @@ public:
     void print_code_message() const;
     void print_design_matrix() const; 
     void print_code_word() const;
+
+    // Solver immplementation 
+
 
 private:
     // Generate random numbers
@@ -173,5 +174,9 @@ void AMP::print_design_matrix() const
         std::cout << std::endl;
     }
 }
+
+
+// Solver immplementation 
+
 
 #endif // AMP_H

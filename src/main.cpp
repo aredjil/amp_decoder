@@ -1,14 +1,15 @@
-#include <iostream>
-#include <vector>
-#include <cassert>
 
 #include "../include/amp.hpp"
-#include "../include/utils.hpp"
+// #include "../include/utils.hpp"
 /**
  * NOTE: add a help option later (not urgent)
  * NOTE: Immplement the algorithms
  * NOTE: Use templates to make things easier
  */
+
+ bool is_power_of_two(int n){
+    return n > 0 && (n & (n - 1)) == 0; 
+}
 
 int main(int argc, char **argv)
 {

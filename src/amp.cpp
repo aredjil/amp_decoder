@@ -21,6 +21,11 @@ AMP::AMP(const int &number_of_sections,
 
     this->code_messgae.resize(B * L, 0); // Setting the size of the code
     this->N = this->L * this->B;         // Setting the size of the sparse code
+    this->M = (int)(this->N * std::log2(this->B)) / (r * this->B);
+
+    this->F.resize(this->M * this->N);  // Setting the size of the coding matrix  F is N*M matrix
+    std_dev = std::sqrt(1.0 / this->L); // standard deviation of the design matrix
+    this->codeword.resize(this->M);     // Settign the size of the codeword y
 }
 
 /*
@@ -46,11 +51,6 @@ void AMP::gen_sparse_code()
 void AMP::gen_design_matrix()
 {
 
-    this->M = (int)(this->N * std::log2(this->B)) / (r * this->B);
-
-    this->F.resize(this->M * this->N);         // Setting the size of the coding matrix  F is N*M matrix
-    data_t std_dev = std::sqrt(1.0 / this->L); // standard deviation
-
     std::normal_distribution<data_t> dist(0.0, std_dev);
     /*
         Fill the matrix with gaussian enteries
@@ -64,26 +64,25 @@ void AMP::gen_design_matrix()
 void AMP::gen_codeword()
 {
 
-    this->codeword.resize(this->M);
-
     std::vector<data_t> noise(this->M, 0); // Noise buffer
+    data_t standard_deviation = 1.0 / std::sqrt(snr);
 
-    std::normal_distribution<data_t> dist(0.0, snr);
+    std::normal_distribution<data_t> dist(0.0, standard_deviation);
 
     std::generate(noise.begin(), noise.end(), [&]()
-                  { return dist(this->gen); });
+                  { return dist(gen); }); // Gaussian noise
 
     // Generate the codeword
-    for(int mu = 0; mu<M; mu++)
+
+    for (int mu = 0; mu < M; mu++)
     {
         data_t sum = 0.0;
-        for(int i=0 ;i<N;i++)
+        for (int i = 0; i < N; i++)
         {
-            sum += F[mu*N+i] * code_messgae[i];
+            sum += F[mu * N + i] * code_messgae[i];
         }
-        codeword[mu] = sum;
+        codeword[mu] = sum + noise[mu];
     }
-
 }
 // print the message
 void AMP::print_code_message() const
@@ -121,18 +120,14 @@ void AMP::print_design_matrix() const
 }
 
 // Solver immplementation
-
-/**
- * Compute V_{\mu}^{t} = \sum_{i}F_{\mu i}^2 v_{i}^{t}
- */
 void AMP::compute_dgemv(std::vector<data_t> &F_2, std::vector<data_t> &v, std::vector<data_t> &V)
 {
-    for(int mu=0;mu<M;mu++)
-    {   
-        data_t sum =0.0;
-        for(int i=0;i<N;i++)
+    for (int mu = 0; mu < M; mu++)
+    {
+        data_t sum = 0.0;
+        for (int i = 0; i < N; i++)
         {
-            sum += F_2[mu*N+i]* v[i];
+            sum += F_2[mu * N + i] * v[i];
         }
         V[mu] = sum;
     }
@@ -140,17 +135,16 @@ void AMP::compute_dgemv(std::vector<data_t> &F_2, std::vector<data_t> &v, std::v
 // Compute onsegar term
 void AMP::compute_onsegar(std::vector<data_t> codeword, std::vector<data_t> omega_old, std::vector<data_t> V_new, std::vector<data_t> V_old, std::vector<data_t> a_old, std::vector<data_t> &omega_new)
 {
-    data_t snr_inv = 1.0 / this->snr;
-    data_t Fa =0.0;
-    for(int mu=0;mu<M;mu++)
+    data_t snr_inv = 1.0 / snr;
+    data_t Fa = 0.0;
+    for (int mu = 0; mu < M; mu++)
     {
-        for(int i=0;i<N;i++)
+        for (int i = 0; i < N; i++)
         {
-            Fa += F[mu*N+i] * a_old[i];
+            Fa += F[mu * N + i] * a_old[i];
         }
         omega_new[mu] = Fa - V_new[mu] * ((codeword[mu] - omega_old[mu]) / (snr_inv + V_old[mu]));
     }
-
 }
 
 // Compute cavity variance
@@ -179,32 +173,28 @@ void AMP::compute_cavity_mean(std::vector<data_t> a_old, std::vector<data_t> sig
         {
             sum += F[mu * N + i] * ((codeword[mu] - omega_new[mu]) / (snr_inv + V_new[mu]));
         }
+        std::cout<<" The sum is: "<<sum<<"\n\n";
         cavity_mean[i] = a_old[i] + sigma_new[i] * sum;
     }
-
 }
 // COmpute the estimate of the message a
 void AMP::denoise_a(std::vector<data_t> sigma_new, std::vector<data_t> cavity_mean, std::vector<data_t> &a_new)
 {
     const data_t power_alloc = this->c; // Get the power allocation
-    // 1. compute the sum
-    std::vector<data_t> exp_term(N);
 
-    std::transform(
-        sigma_new.begin(),
-        sigma_new.end(),
-        cavity_mean.begin(),
-        exp_term.begin(),
-        [power_alloc](data_t sigma, data_t cav_m)
+    std::vector<data_t> exp_term(L);
+    // std::vector<data_t> temp_term(N);
+
+    for (int i = 0; i < L; i++)
+    {
+        data_t sum = 0.0;
+        for (int j = 0; j < B; j++)
         {
-            return std::exp(-power_alloc * (power_alloc - 2 * cav_m) / (2 * sigma));
-        });
+            sum += std::exp(-c * (c-2*cavity_mean[i*B+j]) / (2 * sigma_new[i*B+j]));
+        }
+        exp_term[i] = sum;
+    }
 
-    // std::cout<<"Exponential term\n\n";
-    // for(auto term : exp_term)
-    //     std::cout<<" "<<term<<" ";
-    // std::cout<<"\n\n";
-    // 2. loop N times and access the sum using %
     for (int i = 0; i < N; i++)
     {
 
@@ -224,24 +214,19 @@ void AMP::denosie_v(std::vector<data_t> a_new, std::vector<data_t> &v_new)
 void AMP::solve()
 {
 
-    std::vector<data_t> F_2(F); // Piecewise square of design matrix F
+    std::vector<data_t> F_2(F.size()); // Piecewise square of design matrix F
     std::transform(
-        F_2.begin(),
-        F_2.end(),
+        F.begin(),
+        F.end(),
         F_2.begin(),
         [](data_t x)
         { return x * x; });
 
-
     std::vector<data_t> v(N, 1.0 / (B * snr));
-    for(auto term:v)
-        std::cout<<" "<<term<<" ";
-    std::cout<<"\n"; 
     std::vector<data_t> v_new(N, 1.0 / (B * snr));
 
     std::vector<data_t> V_new(M); // vector to hold the result of the matrix multiplication
-    std::vector<data_t> V_old(M); // Old value of V 
-
+    std::vector<data_t> V_old(M); // Old value of V
 
     std::vector<data_t> a_old(N, 0.0); // Store the estimation of the message
     std::vector<data_t> a_new(N, 0.0); // Store the new estimation of the message
@@ -251,10 +236,10 @@ void AMP::solve()
 
     std::vector<data_t> sigma_new(N, 0.0);
     std::vector<data_t> cavity_mean(N, 0.0);
-    
-    int t=0;
-    int t_max = 25;
-    while(t<t_max)
+
+    int t = 0;
+    int t_max = 1;
+    while (t < t_max)
     {
         // Compute V_{\mu}^{t} = \sum_{i}F_{\mu i}^2 v_{i}^{t}
         compute_dgemv(F_2, v, V_new);
@@ -272,7 +257,7 @@ void AMP::solve()
         t++;
     }
 
-    std::cout << "The estimated message\n";
+    std::cout << "The estimated message a: \n";
     for (int i = 0; i < L; i++)
     {
         for (int j = 0; j < B; j++)

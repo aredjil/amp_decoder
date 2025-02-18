@@ -13,7 +13,6 @@
 
 int main(int argc, char **argv)
 {
-    std::cout << std::scientific<< std::setprecision(pre); // Ouput format 
     int num_sections{2};      // Number of sections per message
     int section_size{4};      // Size of a single section
     data_t power_allocation{1.0}; // Power allocation value

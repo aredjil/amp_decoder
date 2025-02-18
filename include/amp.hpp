@@ -11,17 +11,8 @@
 #include <numeric>
 #include <cassert>
 
-// precison of the output
-#define pre 4
 #define data_t long double // Data type to be used 
-/**
- * TODO: immplement the denoising function denoise_a();
- * TODO:immplement the denoising function denoise_v();
- * TODO: immplement a function to compute the section error rate 
- */
-/*
-Check if a number n is a power of 2.
-*/
+
 
 class AMP
 {
@@ -34,6 +25,7 @@ public:
     data_t c;   // power allocation value
     data_t r;   // communication rate
     data_t snr; // signla to noise ratio
+    data_t std_dev; // standard deviation of the Gaussian Channel 
     /*
     The code is divided into L sections of length B
     B is the size of the message alphabet

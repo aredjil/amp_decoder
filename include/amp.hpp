@@ -89,6 +89,8 @@ public:
 
     // Compute the message estimation 
     void denoise_a(std::vector<double> sigma_new, std::vector<double> cavity_mean, std::vector<double> &a_new);
+    // Get the error of the estimation value 
+    void denosie_v(std::vector<double> a_new, std::vector<double> &v_new);
     // Solver current immplementation just to check output of helper functions
     void solve();
 

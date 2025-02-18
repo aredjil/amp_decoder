@@ -2,13 +2,13 @@
 // #include "../include/utils.hpp"
 
 /*
-    Class constructor 
+    Class constructor
 */
 AMP::AMP(const int &number_of_sections,
-    const int &section_size,
-    const double &power_allocation,
-    double const &rate,
-    double const &signal_to_noise_ration)
+         const int &section_size,
+         const double &power_allocation,
+         double const &rate,
+         double const &signal_to_noise_ration)
 
     : L(number_of_sections) // NUmber of sections
       ,
@@ -22,8 +22,6 @@ AMP::AMP(const int &number_of_sections,
     this->code_messgae.resize(B * L, 0); // Setting the size of the code
     this->N = this->L * this->B;         // Setting the size of the sparse code
 }
-
-
 
 /*
     Function to generate sparse superposition codes.
@@ -223,7 +221,6 @@ void AMP::compute_cavity_mean(std::vector<double> a_old, std::vector<double> sig
     std::vector<double> sub(M);
     std::vector<double> frac(M);
 
-
     std::vector<double> FV_inv(N);
     std::vector<double> sigmaF_iv(N);
 
@@ -237,25 +234,24 @@ void AMP::compute_cavity_mean(std::vector<double> a_old, std::vector<double> sig
 
     // Compute the fraction
     std::transform(
-        codeword.begin(), 
-        codeword.end(), 
-        omega_new.begin(), 
-        sub.begin(), 
-        [](double y, double omega){
-            return y-omega;
-        }
-    );
-
+        codeword.begin(),
+        codeword.end(),
+        omega_new.begin(),
+        sub.begin(),
+        [](double y, double omega)
+        {
+            return y - omega;
+        });
 
     std::transform(
-        sub.begin(), 
-        sub.end(), 
-        V_inv.begin(), 
-        frac.begin(), //Store the result here  
-        [](double a, double b){
+        sub.begin(),
+        sub.end(),
+        V_inv.begin(),
+        frac.begin(), // Store the result here
+        [](double a, double b)
+        {
             return a / b;
-        }
-    );
+        });
 
     // Compute F.V_inv
     // compute_dgemv(F, V_inv, FV_inv);
@@ -283,12 +279,44 @@ void AMP::compute_cavity_mean(std::vector<double> a_old, std::vector<double> sig
         sigmaF_iv.begin(),
         cavity_mean.begin(),
         [](auto a, auto b)
-        { return a + b;});
+        { return a + b; });
 }
-// COmpute the estimate of the message a 
+// COmpute the estimate of the message a
 void AMP::denoise_a(std::vector<double> sigma_new, std::vector<double> cavity_mean, std::vector<double> &a_new)
 {
- return;   
+    const double power_alloc = this->c; // Get the power allocation
+    // 1. compute the sum
+    std::vector<double> exp_term(N);
+
+
+    std::transform(
+        sigma_new.begin(),
+        sigma_new.end(),
+        cavity_mean.begin(),
+        exp_term.begin(),
+        [power_alloc](double sigma, double cav_m)
+        {
+            return std::exp(-power_alloc * (power_alloc - 2 * cav_m) / (2 * sigma));
+        });
+    
+    // std::cout<<"Exponential term\n\n";
+    // for(auto term : exp_term)
+    //     std::cout<<" "<<term<<" ";
+    // std::cout<<"\n\n";
+    // 2. loop N times and access the sum using %
+    for (int i = 0; i < N; i++)
+    {   
+
+        a_new[i] = power_alloc * (std::exp(-power_alloc * (power_alloc - 2 * cavity_mean[i]) / (2 * sigma_new[i]))) / exp_term[(i % L)];
+    }
+}
+// Get the the value of the error of the estimation v_new 
+void AMP::denosie_v(std::vector<double> a_new, std::vector<double> &v_new)
+{
+    for(int i=0;i<N;i++)
+    {
+        v_new[i] = a_new[i] * (c-a_new[i]);
+    }
 }
 
 // Solver
@@ -296,7 +324,9 @@ void AMP::solve()
 {
 
     std::vector<double> F_2(F); // Piecewise square of design matrix F
+
     std::vector<double> v(N, 1.0 / (B * snr));
+    std::vector<double>v_new(N);
 
     std::vector<double> V_new(M); // vector to hold the result of the matrix multiplication
     std::vector<double> V_old(M);
@@ -304,6 +334,7 @@ void AMP::solve()
     std::vector<double> Fa(M, 0.0); // Store the result of matrix vector multiplication
 
     std::vector<double> a_old(N, 0.0); // Store the estimation of the message
+    std::vector<double> a_new(N, 0.0); // Store the new estimation of the message
 
     std::vector<double> omega_old(codeword); // Old value of omega
     std::vector<double> omega_new(M);        // New value of omega
@@ -326,8 +357,13 @@ void AMP::solve()
     compute_onsegar(codeword, omega_old, V_new, V_old, Fa, omega_new);
     // Compute the cavity variance
     compute_cavity_var(F_2, V_new, sigma_new);
-    // Compute the cavity mean 
-    compute_cavity_mean(a_old, sigma_new, V_new, omega_new, cavity_mean); 
-    // Compute the message estimate 
-    //
+    // Compute the cavity mean
+    compute_cavity_mean(a_old, sigma_new, V_new, omega_new, cavity_mean);
+    // Compute the message estimate
+    denoise_a(sigma_new, cavity_mean, a_new);
+    denosie_v(a_new, v_new);
+    for(auto term:v_new)
+        std::cout<<" "<<term<<" ";
+    std::cout<<"\n\n";
+
 }

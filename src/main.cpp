@@ -13,7 +13,7 @@
 
 int main(int argc, char **argv)
 {
-    int num_sections{2};      // Number of sections per message
+    int num_sections{4};      // Number of sections per message
     int section_size{4};      // Size of a single section
     data_t power_allocation{1.0}; // Power allocation value
     data_t comm_rate{1.3};

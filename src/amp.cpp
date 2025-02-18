@@ -4,6 +4,8 @@
  * AMP Class constructor
  * NOTE: Pass the random seed as a paramter to the class
  * NOTE: Comment the intilized variables inside the constructor
+ * NOTE: Too many vectors, try to reduce their usage 
+ * NOTE: Now that everything seems to be working use cblas routines to accelerate operations 
  */
 AMP::AMP(const int &number_of_sections,
          const int &section_size,

@@ -84,7 +84,7 @@ int main(int argc, char **argv)
 
     std::cout<<"Testing the first function\n\n";
     my_amp.solve();
-    std::cout << "\n\n";
+    // std::cout << "\n\n";
 
     return 0;
 }

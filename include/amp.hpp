@@ -81,7 +81,7 @@ public:
 
     // Compute the first line of the algorithm
     void compute_dgemv(std::vector<double> &F_2, std::vector<double> &v, std::vector<double> &V);
-    void compute_onsegar(std::vector<double> codeword, std::vector<double> omega_old, std::vector<double> V_new, std::vector<double> V_old, std::vector<double> Fa, std::vector<double> &omega_new);
+    void compute_onsegar(std::vector<double> codeword, std::vector<double> omega_old, std::vector<double> V_new, std::vector<double> V_old, std::vector<double> a_old, std::vector<double> &omega_new);
     // Compute cavity variance
     void compute_cavity_var(std::vector<double> F_2, std::vector<double> V_new, std::vector<double> &sigma_new);
     // Compute cavity mean

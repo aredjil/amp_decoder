@@ -69,9 +69,11 @@ public:
     // Get the error of the estimation value 
     void denosie_v(const std::vector<data_t> & a_new, std::vector<data_t> &v_new);
     // Compute the error 
-    void compute_dif(const std::vector<data_t> &a_new, const std::vector<data_t> &a_old, data_t &diff);
+    data_t compute_dif(const std::vector<data_t> &a_new, const std::vector<data_t> &a_old);
     // Solver current immplementation just to check output of helper functions
     void amplify(std::vector<data_t> a_new, std::vector<data_t> &a_temp);
+    // Compute the mean square error rate ? 
+    data_t compute_mse(const std::vector<data_t>& a_new);
     // Solver
     void solve();
 

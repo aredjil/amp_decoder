@@ -13,7 +13,7 @@
 
 int main(int argc, char **argv)
 {
-    int num_sections{4};      // Number of sections per message
+    int num_sections{8192};      // Number of sections per message
     int section_size{4};      // Size of a single section
     data_t power_allocation{1.0}; // Power allocation value
     data_t comm_rate{1.3};
@@ -68,11 +68,13 @@ int main(int argc, char **argv)
 
     // Generate the corresponding codeword 
     my_amp.gen_codeword();
-    std::cout<<"The message:\n\n";
-    my_amp.print_code_message();
+    // std::cout<<"The message:\n\n";
+    // my_amp.print_code_message();
     std::cout<<"Testing the first function\n\n";
+    auto start = std::chrono::high_resolution_clock::now();
     my_amp.solve();
-    // std::cout << "\n\n";
-
+    auto end = std::chrono::high_resolution_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::seconds>(end-start);
+    std::cout<<"The solver took: "<<duration.count()<<" s\n\n";
     return 0;
 }

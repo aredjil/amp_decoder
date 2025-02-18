@@ -4,8 +4,8 @@
  * AMP Class constructor
  * NOTE: Pass the random seed as a paramter to the class
  * NOTE: Comment the intilized variables inside the constructor
- * NOTE: Too many vectors, try to reduce their usage 
- * NOTE: Now that everything seems to be working use cblas routines to accelerate operations 
+ * NOTE: Too many vectors, try to reduce their usage
+ * NOTE: Now that everything seems to be working use cblas routines to accelerate operations
  */
 AMP::AMP(const int &number_of_sections,
          const int &section_size,
@@ -213,13 +213,14 @@ void AMP::denosie_v(const std::vector<data_t> &a_new, std::vector<data_t> &v_new
     }
 }
 // Compute the difference in estimations
-void AMP::compute_dif(const std::vector<data_t> &a_new, const std::vector<data_t> &a_old, data_t &diff)
+data_t AMP::compute_dif(const std::vector<data_t> &a_new, const std::vector<data_t> &a_old)
 {
+    data_t sum = 0.0;
     for (int i = 0; i < N; i++)
     {
-        diff += (a_new[i] - a_old[i]) * (a_new[i] - a_old[i]);
+        sum += (a_new[i] - a_old[i]) * (a_new[i] - a_old[i]);
     }
-    diff = (1.0 / N) * diff;
+    return (1.0 / N) * sum;
 }
 
 void AMP::amplify(std::vector<data_t> a_new, std::vector<data_t> &a_temp)
@@ -235,6 +236,15 @@ void AMP::amplify(std::vector<data_t> a_new, std::vector<data_t> &a_temp)
         a_temp[i * B + max_idx] = 1.0;
     }
 }
+data_t AMP::compute_mse(const std::vector<data_t> &a_new)
+{
+    data_t err = 0.0;
+    for (int i = 0; i < N; i++)
+    {
+        err += (a_new[i] - code_messgae[i]) * (a_new[i] - code_messgae[i]);
+    }
+    return (1.0 / N) * err;
+}
 
 // Solver
 void AMP::solve()
@@ -246,9 +256,10 @@ void AMP::solve()
     std::vector<data_t> V_new(M); // vector to hold the result of the matrix multiplication
     std::vector<data_t> V_old(M); // Old value of V
 
-    std::vector<data_t> a_old(N, 0.0);  // Store the estimation of the message
-    std::vector<data_t> a_new(N, 0.0);  // Store the new estimation of the message
-    std::vector<data_t> a_temp(N, 0.0); // Vector to store the amplified estimate of the message 
+    std::vector<data_t> a_old(N, 0.0); // Store the estimation of the message
+    std::vector<data_t> a_new(N, 0.0); // Store the new estimation of the message
+
+    std::vector<data_t> a_temp(N, 0.0); // Vector to store the amplified estimate of the message
                                         // Must be set to 0
 
     std::vector<data_t> omega_old(codeword); // Old value of omega
@@ -261,13 +272,15 @@ void AMP::solve()
     data_t delta = ep + 1;
 
     int t = 0;
-    int t_max = 25; // Maximum number of steps 
+    int t_max = 25; // Maximum number of steps
+
+    std::vector<data_t> mse_err(t_max); // vector to hold the mean square error at each iteration
 
     while (t < t_max && delta > ep)
     {
-        // Intilize the amplified vector from previous iteration to 0 
-        std::fill(a_temp.begin(), a_temp.end(), 0); // To avoid collisions with values from previous 
-                                                    // Iterations :D  
+        // Intilize the amplified vector from previous iteration to 0
+        std::fill(a_temp.begin(), a_temp.end(), 0); // To avoid collisions with values from previous
+                                                    // Iterations :D
         // Compute V_{\mu}^{t} = \sum_{i}F_{\mu i}^2 v_{i}^{t}
         update_V(v_old, V_new); // Update V
         // Compute omege_new
@@ -281,7 +294,9 @@ void AMP::solve()
         // Compute the error in the message estimate
         denosie_v(a_new, v_new);
 
-        // Amplify the estimated message 
+        // Compute the mean square error
+        mse_err[t] = compute_mse(a_new);
+        // Amplify the estimated message
         amplify(a_new, a_temp);
 
         // Swap old values with new ones for the next iteration
@@ -293,18 +308,12 @@ void AMP::solve()
 
         omega_old = omega_new;
         // Check covnergence
-        compute_dif(a_new, a_old, delta);
+        delta = compute_dif(a_new, a_old);
         // increment the counter
         t++;
     }
-    std::cout << "Message estimate \n\n";
-    for (int i = 0; i < L; i++)
-    {
-        for (int j = 0; j < B; j++)
-        {
-            std::cout << " " << a_temp[i * B + j] << " ";
-        }
-        std::cout << "\n";
-    }
-    // std::cout << " The number of iteration performe is: " << t << " \n\n";
+    std::cout << "The algorithm converged after: " << t << " iterations\n\n";
+    for (auto err : mse_err)
+        std::cout << " " << err << " ";
+    std::cout << "\n\n";
 }

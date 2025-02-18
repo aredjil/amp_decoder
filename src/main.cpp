@@ -16,9 +16,9 @@ int main(int argc, char **argv)
     std::cout << std::scientific<< std::setprecision(pre); // Ouput format 
     int num_sections{2};      // Number of sections per message
     int section_size{4};      // Size of a single section
-    double power_allocation{1.0}; // Power allocation value
-    double comm_rate{1.3};
-    double snr{15.0};
+    data_t power_allocation{1.0}; // Power allocation value
+    data_t comm_rate{1.3};
+    data_t snr{15.0};
 
     for (int i = 1; i < argc; i++)
     {

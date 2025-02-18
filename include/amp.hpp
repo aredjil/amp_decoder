@@ -13,6 +13,7 @@
 
 // precison of the output
 #define pre 4
+#define data_t long double // Data type to be used 
 /**
  * TODO: immplement the denoising function denoise_a();
  * TODO:immplement the denoising function denoise_v();
@@ -30,30 +31,30 @@ public:
     int B;      // Alphabet size of the sparse message
     int N;      // Size of the code_message/ Number of rows of the coding matrix F
     int M;      // number of columns of the coding matrix F
-    double c;   // power allocation value
-    double r;   // communication rate
-    double snr; // signla to noise ratio
+    data_t c;   // power allocation value
+    data_t r;   // communication rate
+    data_t snr; // signla to noise ratio
     /*
     The code is divided into L sections of length B
     B is the size of the message alphabet
     L is the length of the message
     message ---- > code message (sparse super position code)
     */
-    std::vector<double> code_messgae; // Sparse code for the message code_message is 1 dimensional vector with N elements.
+    std::vector<data_t> code_messgae; // Sparse code for the message code_message is 1 dimensional vector with N elements.
     /*
         Coding matrix
     */
-    std::vector<double> F; // normal random matrix with 0 mean and 1/sqrt(L) std
+    std::vector<data_t> F; // normal random matrix with 0 mean and 1/sqrt(L) std
     /*
         Code word
     */
-    std::vector<double> codeword;
+    std::vector<data_t> codeword;
 
     AMP(const int &number_of_sections,
         const int &section_size,
-        const double &power_allocation,
-        double const &rate,
-        double const &signal_to_noise_ration);
+        const data_t &power_allocation,
+        data_t const &rate,
+        data_t const &signal_to_noise_ration);
 
     //     : L(number_of_sections) // NUmber of sections
     //       ,
@@ -80,17 +81,17 @@ public:
     void print_code_word() const;
 
     // Compute the first line of the algorithm
-    void compute_dgemv(std::vector<double> &F_2, std::vector<double> &v, std::vector<double> &V);
-    void compute_onsegar(std::vector<double> codeword, std::vector<double> omega_old, std::vector<double> V_new, std::vector<double> V_old, std::vector<double> a_old, std::vector<double> &omega_new);
+    void compute_dgemv(std::vector<data_t> &F_2, std::vector<data_t> &v, std::vector<data_t> &V);
+    void compute_onsegar(std::vector<data_t> codeword, std::vector<data_t> omega_old, std::vector<data_t> V_new, std::vector<data_t> V_old, std::vector<data_t> a_old, std::vector<data_t> &omega_new);
     // Compute cavity variance
-    void compute_cavity_var(std::vector<double> F_2, std::vector<double> V_new, std::vector<double> &sigma_new);
+    void compute_cavity_var(std::vector<data_t> F_2, std::vector<data_t> V_new, std::vector<data_t> &sigma_new);
     // Compute cavity mean
-    void compute_cavity_mean(std::vector<double> a_old, std::vector<double> sigma_new, std::vector<double> V_new, std::vector<double> omega_new, std::vector<double> &cavity_mean);
+    void compute_cavity_mean(std::vector<data_t> a_old, std::vector<data_t> sigma_new, std::vector<data_t> V_new, std::vector<data_t> omega_new, std::vector<data_t> &cavity_mean);
 
     // Compute the message estimation 
-    void denoise_a(std::vector<double> sigma_new, std::vector<double> cavity_mean, std::vector<double> &a_new);
+    void denoise_a(std::vector<data_t> sigma_new, std::vector<data_t> cavity_mean, std::vector<data_t> &a_new);
     // Get the error of the estimation value 
-    void denosie_v(std::vector<double> a_new, std::vector<double> &v_new);
+    void denosie_v(std::vector<data_t> a_new, std::vector<data_t> &v_new);
     // Solver current immplementation just to check output of helper functions
     void solve();
 

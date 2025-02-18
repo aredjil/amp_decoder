@@ -23,7 +23,7 @@ AMP::AMP(const int &number_of_sections,
     N = L * B;                     // Setting the size of the sparse code
     M = static_cast<int>((N * std::log2(B)) / (r * B));
 
-    F.resize(M * N);              // Setting the size of the coding matrix  F is N*M matrix
+    F.resize(M * N);              // Setting the size of the coding matrix  F is M*N matrix
     std_dev = 1.0 / std::sqrt(L); // standard deviation of the design matrix
     codeword.resize(M);           // Settign the size of the codeword y
 }
@@ -109,18 +109,19 @@ void AMP::print_code_word() const
 // Print design matrix
 void AMP::print_design_matrix() const
 {
-    for (int i = 0; i < N; i++)
+
+    for (int mu = 0; mu < M; mu++)
     {
-        for (int mu = 0; mu < M; mu++)
+        for (int i = 0; i < N; i++)
         {
             std::cout << " " << F[mu * N + i] << " ";
         }
-        std::cout << std::endl;
     }
+    std::cout << std::endl;
 }
 
 // Solver immplementation
-void AMP::update_V(std::vector<data_t> &v, std::vector<data_t> &V)
+void AMP::update_V(const std::vector<data_t> &v, std::vector<data_t> &V)
 {
     for (int mu = 0; mu < M; mu++)
     {
@@ -133,7 +134,7 @@ void AMP::update_V(std::vector<data_t> &v, std::vector<data_t> &V)
     }
 }
 // Compute onsegar term
-void AMP::compute_onsegar(std::vector<data_t> omega_old, std::vector<data_t> V_new, std::vector<data_t> V_old, std::vector<data_t> a_old, std::vector<data_t> &omega_new)
+void AMP::compute_onsegar(const std::vector<data_t> &omega_old, const std::vector<data_t> &V_new, const std::vector<data_t> &V_old, const std::vector<data_t> &a_old, std::vector<data_t> &omega_new)
 {
     data_t snr_inv = 1.0 / snr;
     for (int mu = 0; mu < M; mu++)
@@ -148,7 +149,7 @@ void AMP::compute_onsegar(std::vector<data_t> omega_old, std::vector<data_t> V_n
 }
 
 // Compute cavity variance
-void AMP::compute_cavity_var(std::vector<data_t> V_new, std::vector<data_t> &sigma_new)
+void AMP::compute_cavity_var(const std::vector<data_t> &V_new, std::vector<data_t> &sigma_new)
 {
     data_t snr_inv = 1.0 / snr;
 
@@ -163,7 +164,7 @@ void AMP::compute_cavity_var(std::vector<data_t> V_new, std::vector<data_t> &sig
     }
 }
 // Compute cavity mean
-void AMP::compute_cavity_mean(std::vector<data_t> a_old, std::vector<data_t> sigma_new, std::vector<data_t> V_new, std::vector<data_t> omega_new, std::vector<data_t> &cavity_mean)
+void AMP::compute_cavity_mean(const std::vector<data_t> &a_old, const std::vector<data_t> &sigma_new, const std::vector<data_t> &V_new, const std::vector<data_t> &omega_new, std::vector<data_t> &cavity_mean)
 {
     const data_t snr_inv = 1.0 / snr; // Get the signal to noise ratio
 
@@ -178,7 +179,7 @@ void AMP::compute_cavity_mean(std::vector<data_t> a_old, std::vector<data_t> sig
     }
 }
 // COmpute the estimate of the message a
-void AMP::denoise_a(std::vector<data_t> sigma_new, std::vector<data_t> cavity_mean, std::vector<data_t> &a_new)
+void AMP::denoise_a(const std::vector<data_t> &sigma_new, const std::vector<data_t> &cavity_mean, std::vector<data_t> &a_new)
 {
 
     std::vector<data_t> exp_term(L);
@@ -196,11 +197,11 @@ void AMP::denoise_a(std::vector<data_t> sigma_new, std::vector<data_t> cavity_me
     for (int i = 0; i < N; i++)
     {
 
-        a_new[i] = c * (std::exp(-c * (c - 2 * cavity_mean[i]) / (2 * sigma_new[i]))) / exp_term[(i + B) % B];
+        a_new[i] = c * (std::exp(-c * (c - 2 * cavity_mean[i]) / (2 * sigma_new[i]))) / exp_term[i / B];
     }
 }
 // Get the the value of the error of the estimation v_new
-void AMP::denosie_v(std::vector<data_t> a_new, std::vector<data_t> &v_new)
+void AMP::denosie_v(const std::vector<data_t> &a_new, std::vector<data_t> &v_new)
 {
     for (int i = 0; i < N; i++)
     {
@@ -224,11 +225,11 @@ void AMP::solve()
     std::vector<data_t> omega_old(codeword); // Old value of omega
     std::vector<data_t> omega_new(codeword); // New value of omega
 
-    std::vector<data_t> sigma_new(N, 1.0);
-    std::vector<data_t> cavity_mean(N, 1.0);
+    std::vector<data_t> sigma_new(N);
+    std::vector<data_t> cavity_mean(N);
 
     int t = 0;
-    int t_max = 50;
+    int t_max = 5;
 
     while (t < t_max)
     {
@@ -245,8 +246,13 @@ void AMP::solve()
         // Compute the error in the message estimate
         denosie_v(a_new, v_new);
         // swap a_old, v_old and a_new, and v_new
-        a_old = a_new;
         v_old = v_new;
+
+        V_old = V_new;
+
+        a_old = a_new;
+
+        omega_old = omega_new;
         t++;
     }
 
@@ -256,6 +262,16 @@ void AMP::solve()
         for (int j = 0; j < B; j++)
         {
             std::cout << " " << a_new[i * B + j] << " ";
+        }
+        std::cout << std::endl;
+    }
+    std::cout << "\n\n";
+    std::cout << "The estimated message v: \n";
+    for (int i = 0; i < L; i++)
+    {
+        for (int j = 0; j < B; j++)
+        {
+            std::cout << " " << v_new[i * B + j] << " ";
         }
         std::cout << std::endl;
     }

@@ -73,17 +73,17 @@ public:
     void print_code_word() const;
 
     // Compute the first line of the algorithm
-    void update_V(std::vector<data_t> &v, std::vector<data_t> &V);
-    void compute_onsegar(std::vector<data_t> omega_old, std::vector<data_t> V_new, std::vector<data_t> V_old, std::vector<data_t> a_old, std::vector<data_t> &omega_new);
+    void update_V(const std::vector<data_t> &v, std::vector<data_t> &V);
+    void compute_onsegar(const std::vector<data_t> & omega_old, const std::vector<data_t> & V_new, const std::vector<data_t> & V_old, const std::vector<data_t> & a_old, std::vector<data_t> &omega_new);
     // Compute cavity variance
-    void compute_cavity_var(std::vector<data_t> V_new, std::vector<data_t> &sigma_new);
+    void compute_cavity_var(const std::vector<data_t> & V_new, std::vector<data_t> &sigma_new);
     // Compute cavity mean
-    void compute_cavity_mean(std::vector<data_t> a_old, std::vector<data_t> sigma_new, std::vector<data_t> V_new, std::vector<data_t> omega_new, std::vector<data_t> &cavity_mean);
+    void compute_cavity_mean(const std::vector<data_t> & a_old, const std::vector<data_t> & sigma_new, const std::vector<data_t> & V_new, const std::vector<data_t> & omega_new, std::vector<data_t> &cavity_mean);
 
     // Compute the message estimation 
-    void denoise_a(std::vector<data_t> sigma_new, std::vector<data_t> cavity_mean, std::vector<data_t> &a_new);
+    void denoise_a(const std::vector<data_t> & sigma_new, const std::vector<data_t> &, std::vector<data_t> &a_new);
     // Get the error of the estimation value 
-    void denosie_v(std::vector<data_t> a_new, std::vector<data_t> &v_new);
+    void denosie_v(const std::vector<data_t> & a_new, std::vector<data_t> &v_new);
     // Solver current immplementation just to check output of helper functions
     void amplify(std::vector<double> a, std::vector<double>& a_temp);
     // Solver

@@ -271,11 +271,11 @@ void AMP::solve()
     const data_t ep = 10E-8; // Error threshold
     data_t delta = ep + 1;
 
-    int t = 0;
+    int t = 1;
     int t_max = 25; // Maximum number of steps
 
-    std::vector<data_t> mse_err(t_max); // vector to hold the mean square error at each iteration
-
+    std::vector<data_t> mse_err(t_max, 0.0); // vector to hold the mean square error at each iteration
+    mse_err[0] = 1.0;
     while (t < t_max && delta > ep)
     {
         // Intilize the amplified vector from previous iteration to 0
@@ -296,6 +296,9 @@ void AMP::solve()
 
         // Compute the mean square error
         mse_err[t] = compute_mse(a_new);
+        // Check covnergence
+        delta = compute_dif(a_new, a_old);
+
         // Amplify the estimated message
         amplify(a_new, a_temp);
 
@@ -307,13 +310,15 @@ void AMP::solve()
         a_old = a_new;
 
         omega_old = omega_new;
-        // Check covnergence
-        delta = compute_dif(a_new, a_old);
         // increment the counter
         t++;
     }
     std::cout << "The algorithm converged after: " << t << " iterations\n\n";
+    std::cout << "Iteration" << " MSE\n\n";
+    int count = 0;
     for (auto err : mse_err)
-        std::cout << " " << err << " ";
-    std::cout << "\n\n";
+    {
+        std::cout << count << " " << err << "\n";
+        count++;
+    }
 }

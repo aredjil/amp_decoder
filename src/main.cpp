@@ -68,19 +68,8 @@ int main(int argc, char **argv)
 
     // Generate the corresponding codeword 
     my_amp.gen_codeword();
-
-    std::cout << "Message: \n\n";
+    std::cout<<"The message:\n\n";
     my_amp.print_code_message();
-    std::cout << "\n\n";
-
-    std::cout << "Design matrix: \n\n";
-    my_amp.print_design_matrix();
-    std::cout << "\n\n";
-
-    std::cout << "Codeword: \n\n";
-    my_amp.print_code_word();
-    std::cout << "\n\n";
-
     std::cout<<"Testing the first function\n\n";
     my_amp.solve();
     // std::cout << "\n\n";

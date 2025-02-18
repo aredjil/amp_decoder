@@ -10,7 +10,7 @@
 #include <iomanip>
 #include <numeric>
 #include <cassert>
-
+#include <chrono>
 #define data_t long double // Data type to be used 
 
 
@@ -48,21 +48,6 @@ public:
         data_t const &rate,
         data_t const &signal_to_noise_ration);
 
-    //     : L(number_of_sections) // NUmber of sections
-    //       ,
-    //       B(section_size) // Section size
-    //       ,
-    //       c(power_allocation), r(rate) // Communication rate
-    //       ,
-    //       snr(signal_to_noise_ration), gen(dv()) // Random number generator
-    // {
-
-    //     this->code_messgae.resize(B * L, 0); // Setting the size of the code
-    //     this->N = this->L * this->B;         // Setting the size of the sparse code
-    // }
-    /*
-        Coding the message
-     */
 
     void gen_sparse_code();   // Generate sparse superposition code
     void gen_design_matrix(); // Generate design matrix
@@ -79,13 +64,14 @@ public:
     void compute_cavity_var(const std::vector<data_t> & V_new, std::vector<data_t> &sigma_new);
     // Compute cavity mean
     void compute_cavity_mean(const std::vector<data_t> & a_old, const std::vector<data_t> & sigma_new, const std::vector<data_t> & V_new, const std::vector<data_t> & omega_new, std::vector<data_t> &cavity_mean);
-
     // Compute the message estimation 
     void denoise_a(const std::vector<data_t> & sigma_new, const std::vector<data_t> &, std::vector<data_t> &a_new);
     // Get the error of the estimation value 
     void denosie_v(const std::vector<data_t> & a_new, std::vector<data_t> &v_new);
+    // Compute the error 
+    void compute_dif(const std::vector<data_t> &a_new, const std::vector<data_t> &a_old, data_t &diff);
     // Solver current immplementation just to check output of helper functions
-    void amplify(std::vector<double> a, std::vector<double>& a_temp);
+    void amplify(std::vector<data_t> a_new, std::vector<data_t> &a_temp);
     // Solver
     void solve();
 

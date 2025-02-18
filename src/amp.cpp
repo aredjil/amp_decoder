@@ -1,9 +1,10 @@
 #include "../include/amp.hpp"
-// #include "../include/utils.hpp"
 
-/*
-    Class constructor
-*/
+/**
+ * AMP Class constructor
+ * NOTE: Pass the random seed as a paramter to the class
+ * NOTE: Comment the intilized variables inside the constructor
+ */
 AMP::AMP(const int &number_of_sections,
          const int &section_size,
          const data_t &power_allocation,
@@ -28,14 +29,15 @@ AMP::AMP(const int &number_of_sections,
     codeword.resize(M);           // Settign the size of the codeword y
 }
 
-/*
-    Function to generate sparse superposition codes.
-*/
+/**
+ * Function that generates sparse superposition code
+ * NOTE: comment its functionality
+ */
 void AMP::gen_sparse_code()
 {
     // Generate a random index between 0 and section size
     data_t lower_bound{0.0};
-    data_t upper_bound = static_cast<data_t>(this->B) - 1.0;
+    data_t upper_bound = static_cast<data_t>(B) - 1.0;
     std::uniform_real_distribution<data_t> dist(lower_bound, upper_bound);
     // Iterate through the sections
     for (int i = 0; i < L; i++)
@@ -45,9 +47,9 @@ void AMP::gen_sparse_code()
         this->code_messgae[i * B + j] = c;
     }
 }
-/*
-    Function to generate design matrix.
-*/
+/**
+ * A function to generate a design matrix/coding matrix
+ */
 void AMP::gen_design_matrix()
 {
 
@@ -208,6 +210,29 @@ void AMP::denosie_v(const std::vector<data_t> &a_new, std::vector<data_t> &v_new
         v_new[i] = a_new[i] * (c - a_new[i]);
     }
 }
+// Compute the difference in estimations
+void AMP::compute_dif(const std::vector<data_t> &a_new, const std::vector<data_t> &a_old, data_t &diff)
+{
+    for (int i = 0; i < N; i++)
+    {
+        diff += (a_new[i] - a_old[i]) * (a_new[i] - a_old[i]);
+    }
+    diff = (1.0 / N) * diff;
+}
+
+void AMP::amplify(std::vector<data_t> a_new, std::vector<data_t> &a_temp)
+{
+    for (int i = 0; i < L; i++)
+    {
+        data_t *row_begin = a_new.data() + i * B;
+        data_t *row_end = row_begin + B;
+        data_t *max_element = std::max_element(row_begin, row_end);
+
+        int max_idx = std::distance(row_begin, max_element);
+
+        a_temp[i * B + max_idx] = 1.0;
+    }
+}
 
 // Solver
 void AMP::solve()
@@ -219,8 +244,10 @@ void AMP::solve()
     std::vector<data_t> V_new(M); // vector to hold the result of the matrix multiplication
     std::vector<data_t> V_old(M); // Old value of V
 
-    std::vector<data_t> a_old(N, 0.0); // Store the estimation of the message
-    std::vector<data_t> a_new(N, 0.0); // Store the new estimation of the message
+    std::vector<data_t> a_old(N, 0.0);  // Store the estimation of the message
+    std::vector<data_t> a_new(N, 0.0);  // Store the new estimation of the message
+    std::vector<data_t> a_temp(N, 0.0); // Vector to store the amplified estimate of the message 
+                                        // Must be set to 0
 
     std::vector<data_t> omega_old(codeword); // Old value of omega
     std::vector<data_t> omega_new(codeword); // New value of omega
@@ -228,11 +255,17 @@ void AMP::solve()
     std::vector<data_t> sigma_new(N);
     std::vector<data_t> cavity_mean(N);
 
-    int t = 0;
-    int t_max = 5;
+    const data_t ep = 10E-8; // Error threshold
+    data_t delta = ep + 1;
 
-    while (t < t_max)
+    int t = 0;
+    int t_max = 25; // Maximum number of steps 
+
+    while (t < t_max && delta > ep)
     {
+        // Intilize the amplified vector from previous iteration to 0 
+        std::fill(a_temp.begin(), a_temp.end(), 0); // To avoid collisions with values from previous 
+                                                    // Iterations :D  
         // Compute V_{\mu}^{t} = \sum_{i}F_{\mu i}^2 v_{i}^{t}
         update_V(v_old, V_new); // Update V
         // Compute omege_new
@@ -245,7 +278,11 @@ void AMP::solve()
         denoise_a(sigma_new, cavity_mean, a_new);
         // Compute the error in the message estimate
         denosie_v(a_new, v_new);
-        // swap a_old, v_old and a_new, and v_new
+
+        // Amplify the estimated message 
+        amplify(a_new, a_temp);
+
+        // Swap old values with new ones for the next iteration
         v_old = v_new;
 
         V_old = V_new;
@@ -253,26 +290,19 @@ void AMP::solve()
         a_old = a_new;
 
         omega_old = omega_new;
+        // Check covnergence
+        compute_dif(a_new, a_old, delta);
+        // increment the counter
         t++;
     }
-
-    std::cout << "The estimated message a: \n";
+    std::cout << "Message estimate \n\n";
     for (int i = 0; i < L; i++)
     {
         for (int j = 0; j < B; j++)
         {
-            std::cout << " " << a_new[i * B + j] << " ";
+            std::cout << " " << a_temp[i * B + j] << " ";
         }
-        std::cout << std::endl;
+        std::cout << "\n";
     }
-    std::cout << "\n\n";
-    std::cout << "The estimated message v: \n";
-    for (int i = 0; i < L; i++)
-    {
-        for (int j = 0; j < B; j++)
-        {
-            std::cout << " " << v_new[i * B + j] << " ";
-        }
-        std::cout << std::endl;
-    }
+    // std::cout << " The number of iteration performe is: " << t << " \n\n";
 }

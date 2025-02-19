@@ -11,7 +11,7 @@
 #include <numeric>
 #include <cassert>
 #include <chrono>
-#define data_t float // Data type to be used for storing the variables 
+#define data_t double // Data type to be used for storing the variables 
                     // I tried using long double for higher precision 
                     // That caused memory problems :) float seems nice way to
                     // I will try also using double and see the difference 

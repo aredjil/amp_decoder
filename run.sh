@@ -10,8 +10,8 @@ for r in 1.3 1.4 1.45 1.6
 do 
     touch ./data/data_mse_${r}_.txt
     touch ./data/data_ser_${r}_.txt
-    ./main_ser.x -l $L -b 4 -r $r > ./data/data_ser_${r}_.txt 
-    ./main_ser.x -l $L -b 4 -r $r > ./data/data_mse_${r}_.txt 
+    ./main_ser.x -l $L -r $r > ./data/data_ser_${r}_.txt 
+    ./main_ser.x -l $L -r $r > ./data/data_mse_${r}_.txt 
 done 
 gnuplot ./src/plot_mse.gp # Generate MSE plot, it will be saved as mse_figure.png in figures 
 gnuplot ./src/plot_ser.gp # Generate MSE plot, it will be saved as mse_figure.png in figures 

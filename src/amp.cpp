@@ -2,22 +2,26 @@
 
 /**
  * AMP Class constructor
- * NOTE: Pass the random seed as a paramter to the class
  * NOTE: Comment the intilized variables inside the constructor
  * NOTE: Too many vectors, try to reduce their usage
- * NOTE: Now that everything seems to be working use cblas routines to accelerate operations
+ * TODO: Use cblas routines
+ * TODO: Define a macro that calls dgemm or sgemm depending on data_t type
+ * TODO: Implement exponentially decaying power allocation
+ * TODO: Implement spatially coupled coding matrix
  */
 AMP::AMP(const int &number_of_sections,
          const int &section_size,
          const data_t &power_allocation,
          data_t const &rate,
-         data_t const &signal_to_noise_ration
-        )
+         data_t const &signal_to_noise_ration)
 
-    :L(number_of_sections) // Number of sections
-    ,B(section_size) // Section size
-    ,c(power_allocation), r(rate) // Communication rate
-    ,snr(signal_to_noise_ration), gen(dv()) // Random number generator
+    : L(number_of_sections) // Number of sections
+      ,
+      B(section_size) // Section size
+      ,
+      c(power_allocation), r(rate) // Communication rate
+      ,
+      snr(signal_to_noise_ration), gen(dv()) // Random number generator
 {
 
     code_messgae.resize(B * L, 0); // Setting the size of the code
@@ -29,7 +33,6 @@ AMP::AMP(const int &number_of_sections,
     codeword.resize(M);           // Settign the size of the codeword y
     ch_capacity = 0.5 * std::log2(1 + snr);
 }
-
 
 void AMP::gen_sparse_code()
 {
@@ -73,16 +76,24 @@ void AMP::gen_codeword()
     std::generate(noise.begin(), noise.end(), [&]()
                   { return dist(gen); }); // Gaussian noise
 
-    // Generate the codeword
-    for (int mu = 0; mu < M; mu++)
-    {
-        data_t sum = 0.0;
-        for (int i = 0; i < N; i++)
-        {
-            sum += F[mu * N + i] * code_messgae[i];
-        }
-        codeword[mu] = sum + noise[mu];
-    }
+// Naive approach to compute matrix vector multiplication
+// for (int mu = 0; mu < M; mu++)
+// {
+//     data_t sum = 0.0;
+//     for (int i = 0; i < N; i++)
+//     {
+//         sum += F[mu * N + i] * code_messgae[i];
+//     }
+//     codeword[mu] = sum + noise[mu];
+// }
+// Openblas routine to compute matrix vector multiplication
+    cblas_sgemv(CblasRowMajor, CblasNoTrans, M, N,
+                1.0,
+                F.data(), N,
+                code_messgae.data(), 1,
+                0.0,
+                codeword.data(), 1);
+
 }
 // print the message
 void AMP::print_code_message() const
@@ -123,15 +134,33 @@ void AMP::print_design_matrix() const
 // Solver immplementation
 void AMP::update_V(const std::vector<data_t> &v, std::vector<data_t> &V)
 {
-    for (int mu = 0; mu < M; mu++)
-    {
-        data_t sum = 0.0;
-        for (int i = 0; i < N; i++)
+    std::vector<data_t> F_2(F);
+    std::transform(
+        F_2.begin(),
+        F_2.end(),
+        F_2.begin(),
+        [](data_t F_ij)
         {
-            sum += F[mu * N + i] * F[mu * N + i] * v[i];
-        }
-        V[mu] = sum;
-    }
+            return F_ij * F_ij;
+        });
+// Naive approach to compute matrix vector multiplication
+// for (int mu = 0; mu < M; mu++)
+// {
+//     data_t sum = 0.0;
+//     for (int i = 0; i < N; i++)
+//     {
+//         sum += F[mu * N + i] * F[mu * N + i] * v[i];
+//     }
+//     V[mu] = sum;
+// }
+// Openblas matrix-vector multiplication
+    cblas_sgemv(CblasRowMajor, CblasNoTrans, M, N,
+                1.0,
+                F_2.data(), N,
+                v.data(), 1,
+                0.0,
+                V.data(), 1);
+
 }
 // Compute onsegar term
 void AMP::compute_onsegar(const std::vector<data_t> &omega_old, const std::vector<data_t> &V_new, const std::vector<data_t> &V_old, const std::vector<data_t> &a_old, std::vector<data_t> &omega_new)
@@ -241,32 +270,31 @@ data_t AMP::compute_mse(const std::vector<data_t> &a_new)
     }
     return (1.0 / N) * err;
 }
-// Compute the section error rate 
+// Compute the section error rate
 data_t AMP::compute_ser(const std::vector<data_t> &a_temp)
 {
-    data_t ser_err; // Variable to hold the value of the section error rate 
-    
+    data_t ser_err; // Variable to hold the value of the section error rate
+
     int count = L;
-    for(int i = 0;i<L;i++)
+    for (int i = 0; i < L; i++)
     {
         int id_count = 0;
-        for(int j=0;j<B;j++)
+        for (int j = 0; j < B; j++)
         {
-            if(std::abs(a_temp[i*B+j] - code_messgae[i*B+j]) < 10E-3)
+            if (std::abs(a_temp[i * B + j] - code_messgae[i * B + j]) < 10E-3)
             {
                 id_count++;
             }
         }
-    if(id_count == B)
-    {
-        count--;
-    }
+        if (id_count == B)
+        {
+            count--;
+        }
     }
     // std::cout<<"Count: "<<count<<"\n";
     ser_err = static_cast<data_t>(count);
-    return  ser_err;
+    return ser_err;
 }
-
 
 // Solver
 void AMP::solve(const int &t_max, const data_t &ep)
@@ -297,15 +325,15 @@ void AMP::solve(const int &t_max, const data_t &ep)
     // int t_max = 25; // Maximum number of steps
 
     data_t mse_err = 1.0;
-    #ifdef MSE
-    std::cout << "Iter"<<" MSE\n";
-    std::cout<<t<<" "<<mse_err<<"\n";
-    #else    
-    data_t ser_err = 1.0; 
-    std::cout << "Iter" <<" SER\n";
-    std::cout<<t<<" "<<ser_err<<"\n";
-    #endif 
-    t++; 
+#ifdef MSE
+    std::cout << "Iter" << " MSE\n";
+    std::cout << t << " " << mse_err << "\n";
+#else
+    data_t ser_err = 1.0;
+    std::cout << "Iter" << " SER\n";
+    std::cout << t << " " << ser_err << "\n";
+#endif
+    t++;
     while (t < t_max && delta > ep)
     {
         // Intilize the amplified vector from previous iteration to 0
@@ -324,18 +352,18 @@ void AMP::solve(const int &t_max, const data_t &ep)
         // Compute the error in the message estimate
         denosie_v(a_new, v_new);
 
-        #ifdef MSE
+#ifdef MSE
         // Compute the mean square error
         mse_err = compute_mse(a_new);
-        std::cout<<t<<" "<<mse_err<<"\n";
-        #else 
+        std::cout << t << " " << mse_err << "\n";
+#else
         amplify(a_new, a_temp);
-        ser_err = compute_ser(a_temp) / L; // compute the section error rate 
-        std::cout<<t<<" "<<ser_err<<"\n";
-        #endif 
+        ser_err = compute_ser(a_temp) / L; // compute the section error rate
+        std::cout << t << " " << ser_err << "\n";
+#endif
         // Check covnergence
         delta = compute_dif(a_new, a_old);
-        // Swap new values and old ones for the next iteration 
+        // Swap new values and old ones for the next iteration
         v_old = v_new;
 
         V_old = V_new;

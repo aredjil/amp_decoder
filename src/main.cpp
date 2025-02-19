@@ -10,11 +10,11 @@ int main(int argc, char **argv)
 {
     std::cout<<std::fixed<<std::setprecision(6);
     int num_sections{1024};      // Number of sections per message
-    int section_size{8};      // Size of a single section
+    int section_size{4};      // Size of a single section
     data_t power_allocation{1.0}; // Power allocation value
     data_t comm_rate{1.3};
     data_t snr{15.0};
-    data_t ep{10E-8};
+    data_t ep{10E-6};
     int t_max{25};
 
 

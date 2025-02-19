@@ -15,8 +15,10 @@
 #include <iomanip>       // Used for IO manipulation 
 #include <cassert>      // Assert expression used to make sure the section length and size are powers of 2 
 #include <chrono>      // Used to time the algorithm  
-
-#define data_t double // Use double precision for the results  
+#include <type_traits> // To check the data type at compile time 
+typedef float data_t; // Use double precision for the results
+                     // to change this cblas routine should be changed from sgemm to dgemm 
+                    // in the source file 
 
 /**
  * AMP class 

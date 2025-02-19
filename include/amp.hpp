@@ -11,7 +11,10 @@
 #include <numeric>
 #include <cassert>
 #include <chrono>
-#define data_t long double // Data type to be used 
+#define data_t float // Data type to be used for storing the variables 
+                    // I tried using long double for higher precision 
+                    // That caused memory problems :) float seems nice way to
+                    // I will try also using double and see the difference 
 
 
 class AMP
@@ -72,8 +75,10 @@ public:
     data_t compute_dif(const std::vector<data_t> &a_new, const std::vector<data_t> &a_old);
     // Solver current immplementation just to check output of helper functions
     void amplify(std::vector<data_t> a_new, std::vector<data_t> &a_temp);
-    // Compute the mean square error rate ? 
+    // Compute the mean square error rate 
     data_t compute_mse(const std::vector<data_t>& a_new);
+    // Compute the section error rate 
+    data_t compute_ser(const std::vector<data_t> &a_temp);
     // Solver
     void solve();
 

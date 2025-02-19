@@ -245,6 +245,32 @@ data_t AMP::compute_mse(const std::vector<data_t> &a_new)
     }
     return (1.0 / N) * err;
 }
+// Compute the section error rate 
+data_t AMP::compute_ser(const std::vector<data_t> &a_temp)
+{
+    data_t ser_err; // Variable to hold the value of the section error rate 
+    
+    int count = L;
+    for(int i = 0;i<L;i++)
+    {
+        int id_count = 0;
+        for(int j=0;j<B;j++)
+        {
+            if(std::abs(a_temp[i*B+j] - code_messgae[i*B+j]) < 10E-3)
+            {
+                id_count++;
+            }
+        }
+    if(id_count == B)
+    {
+        count--;
+    }
+    }
+    // std::cout<<"Count: "<<count<<"\n";
+    ser_err = static_cast<data_t>(count);
+    return  ser_err;
+}
+
 
 // Solver
 void AMP::solve()
@@ -268,14 +294,24 @@ void AMP::solve()
     std::vector<data_t> sigma_new(N);
     std::vector<data_t> cavity_mean(N);
 
-    const data_t ep = 10E-8; // Error threshold
+    const data_t ep = 10E-6; // Error threshold
     data_t delta = ep + 1;
 
-    int t = 1;
+    int t = 0;
     int t_max = 25; // Maximum number of steps
 
-    std::vector<data_t> mse_err(t_max, 0.0); // vector to hold the mean square error at each iteration
-    mse_err[0] = 1.0;
+    // std::vector<data_t> mse_err(t_max, 0.0); // vector to hold the mean square error at each iteration
+    // mse_err[0] = 1.0;
+    data_t mse_err = 1.0;
+    #ifdef MSE
+    std::cout << "Iteration"<<" MSE\n\n";
+    std::cout<<t<<" "<<mse_err<<"\n";
+    #else    
+    data_t ser_err = 1.0; 
+    std::cout << "Iteration" <<" SER\n\n";
+    std::cout<<t<<" "<<ser_err<<"\n";
+    #endif 
+    t++; 
     while (t < t_max && delta > ep)
     {
         // Intilize the amplified vector from previous iteration to 0
@@ -294,15 +330,18 @@ void AMP::solve()
         // Compute the error in the message estimate
         denosie_v(a_new, v_new);
 
+        #ifdef MSE
         // Compute the mean square error
-        mse_err[t] = compute_mse(a_new);
+        mse_err = compute_mse(a_new);
+        std::cout<<t<<" "<<mse_err<<"\n";
+        #else 
+        amplify(a_new, a_temp);
+        ser_err = compute_ser(a_temp) / L; // compute the section error rate 
+        std::cout<<t<<" "<<ser_err<<"\n";
+        #endif 
         // Check covnergence
         delta = compute_dif(a_new, a_old);
-
-        // Amplify the estimated message
-        amplify(a_new, a_temp);
-
-        // Swap old values with new ones for the next iteration
+        // Swap new values and old ones for the next iteration 
         v_old = v_new;
 
         V_old = V_new;
@@ -312,13 +351,5 @@ void AMP::solve()
         omega_old = omega_new;
         // increment the counter
         t++;
-    }
-    std::cout << "The algorithm converged after: " << t << " iterations\n\n";
-    std::cout << "Iteration" << " MSE\n\n";
-    int count = 0;
-    for (auto err : mse_err)
-    {
-        std::cout << count << " " << err << "\n";
-        count++;
     }
 }

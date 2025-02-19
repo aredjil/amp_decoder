@@ -13,6 +13,7 @@
 
 int main(int argc, char **argv)
 {
+    std::cout<<std::fixed<<std::setprecision(6);
     int num_sections{2048};      // Number of sections per message
     int section_size{4};      // Size of a single section
     data_t power_allocation{1.0}; // Power allocation value
@@ -51,11 +52,11 @@ int main(int argc, char **argv)
     assert(is_power_of_two(num_sections) && is_power_of_two(section_size) && "L and B must be powers of 2");
     
     // Print out the parameters used 
-    std::cout<<"Number of sections: "<<num_sections<<"\n";
-    std::cout<<"Section size: "<<section_size<<"\n";
-    std::cout<<"Power allocation: "<<power_allocation<<"\n";
-    std::cout<<"Communication rate: "<<comm_rate<<"\n";
-    std::cout<<"Signal to noise ratio: "<<snr<<"\n\n";
+    // std::cout<<"Number of sections: "<<num_sections<<"\n";
+    // std::cout<<"Section size: "<<section_size<<"\n";
+    // std::cout<<"Power allocation: "<<power_allocation<<"\n";
+    // std::cout<<"Communication rate: "<<comm_rate<<"\n";
+    // std::cout<<"Signal to noise ratio: "<<snr<<"\n\n";
 
     // Intilize the amp class 
     AMP my_amp(num_sections, section_size, power_allocation, comm_rate, snr);
@@ -69,11 +70,11 @@ int main(int argc, char **argv)
     // Generate the corresponding codeword 
     my_amp.gen_codeword();
 
-    std::cout<<"Testing the first function\n\n";
-    auto start = std::chrono::high_resolution_clock::now();
+    // std::cout<<"Testing the first function\n\n";
+    // auto start = std::chrono::high_resolution_clock::now();
     my_amp.solve();
-    auto end = std::chrono::high_resolution_clock::now();
-    auto duration = std::chrono::duration_cast<std::chrono::seconds>(end-start);
-    std::cout<<"The solver took: "<<duration.count()<<" s\n\n";
+    // auto end = std::chrono::high_resolution_clock::now();
+    // auto duration = std::chrono::duration_cast<std::chrono::seconds>(end-start);
+    // std::cout<<"The solver took: "<<duration.count()<<" s\n\n";
     return 0;
 }

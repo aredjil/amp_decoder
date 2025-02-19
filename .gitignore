@@ -464,7 +464,7 @@ MigrationBackup/
 # Build Results of an ATL Project
 
 # Benchmark Results
-
+*.vscode
 # .NET Core
 
 # ASP.NET Scaffolding

@@ -11,15 +11,13 @@ AMP::AMP(const int &number_of_sections,
          const int &section_size,
          const data_t &power_allocation,
          data_t const &rate,
-         data_t const &signal_to_noise_ration)
+         data_t const &signal_to_noise_ration
+        )
 
-    : L(number_of_sections) // NUmber of sections
-      ,
-      B(section_size) // Section size
-      ,
-      c(power_allocation), r(rate) // Communication rate
-      ,
-      snr(signal_to_noise_ration), gen(dv()) // Random number generator
+    :L(number_of_sections) // Number of sections
+    ,B(section_size) // Section size
+    ,c(power_allocation), r(rate) // Communication rate
+    ,snr(signal_to_noise_ration), gen(dv()) // Random number generator
 {
 
     code_messgae.resize(B * L, 0); // Setting the size of the code
@@ -29,12 +27,10 @@ AMP::AMP(const int &number_of_sections,
     F.resize(M * N);              // Setting the size of the coding matrix  F is M*N matrix
     std_dev = 1.0 / std::sqrt(L); // standard deviation of the design matrix
     codeword.resize(M);           // Settign the size of the codeword y
+    ch_capacity = 0.5 * std::log2(1 + snr);
 }
 
-/**
- * Function that generates sparse superposition code
- * NOTE: comment its functionality
- */
+
 void AMP::gen_sparse_code()
 {
     // Generate a random index between 0 and section size
@@ -46,7 +42,7 @@ void AMP::gen_sparse_code()
     {
 
         int j = dist(gen);
-        this->code_messgae[i * B + j] = c;
+        this->code_messgae[i * B + j] = 1.0;
     }
 }
 /**
@@ -273,7 +269,7 @@ data_t AMP::compute_ser(const std::vector<data_t> &a_temp)
 
 
 // Solver
-void AMP::solve()
+void AMP::solve(const int &t_max, const data_t &ep)
 {
 
     std::vector<data_t> v_old(N, 1.0 / (B * snr));
@@ -294,21 +290,19 @@ void AMP::solve()
     std::vector<data_t> sigma_new(N);
     std::vector<data_t> cavity_mean(N);
 
-    const data_t ep = 10E-6; // Error threshold
+    // Error threshold
     data_t delta = ep + 1;
 
     int t = 0;
-    int t_max = 25; // Maximum number of steps
+    // int t_max = 25; // Maximum number of steps
 
-    // std::vector<data_t> mse_err(t_max, 0.0); // vector to hold the mean square error at each iteration
-    // mse_err[0] = 1.0;
     data_t mse_err = 1.0;
     #ifdef MSE
-    std::cout << "Iteration"<<" MSE\n\n";
+    std::cout << "Iter"<<" MSE\n";
     std::cout<<t<<" "<<mse_err<<"\n";
     #else    
     data_t ser_err = 1.0; 
-    std::cout << "Iteration" <<" SER\n\n";
+    std::cout << "Iter" <<" SER\n";
     std::cout<<t<<" "<<ser_err<<"\n";
     #endif 
     t++; 

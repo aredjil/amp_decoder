@@ -4,7 +4,7 @@ make clean # Clean results from the previous computations
 make # Build the excutable 
 mkdir -p data # Create a directory if it does not already exist where to save data
 mkdir -p figures # Create a directory if it does not already exist where to save figures 
-L=2048 # Set the section size to be 2**15 / 4 
+L=8192 # Set the section size to be 2**15 / 4 
 # Iterate over different communication rates 
 for r in 1.3 1.4 1.45 1.6 
 do 

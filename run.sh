@@ -3,7 +3,7 @@
 make clean # Clean results from the previous computations  
 echo "Building the excutable"
 echo ""
-make # Build the excutable 
+make main_ser.x # Build the excutable 
 echo "Creating directories..."
 echo " "
 mkdir -p data # Create a directory if it does not already exist where to save data

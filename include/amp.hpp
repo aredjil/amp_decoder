@@ -11,14 +11,15 @@
 #include <vector>            // Vector object to store the algorithm vectors 
 #include <random>           // Generate random numbers
 #include <algorithm>       // Operations on C++ containers
-#include <cblas.h>        // cblas for optimized linear algebra operations
 #include <iomanip>       // Used for IO manipulation 
 #include <cassert>      // Assert expression used to make sure the section length and size are powers of 2 
 #include <chrono>      // Used to time the algorithm  
+#include<cblas.h>
 #include <type_traits> // To check the data type at compile time 
-typedef float data_t; // Use double precision for the results
+typedef double data_t; // Use double precision for the results
                      // to change this cblas routine should be changed from sgemm to dgemm 
                     // in the source file 
+                   // Results are not accurate with float precision using double is better  
 
 /**
  * AMP class 
@@ -86,6 +87,8 @@ private:
     // Generate random numbers
     std::random_device dv; // Random seed
     std::mt19937 gen;      // Pseudo-number generator
+    data_t snr_inv;  // Inverse of the snr
+
 };
 
 #endif // AMP_H

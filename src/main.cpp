@@ -61,7 +61,7 @@ int main(int argc, char **argv)
     // Assert that the number of section and the section length are powers of 2
     assert(is_power_of_two(num_sections) && is_power_of_two(section_size) && "L and B must be powers of 2");
     // Intilize the amp class 
-    AMP my_amp(num_sections, section_size, power_allocation, comm_rate, snr);
+    AMP<data_t> my_amp(num_sections, section_size, power_allocation, comm_rate, snr); // data_t is defined in the header amp.hpp 
 
     // Generate sparse code 
     my_amp.gen_sparse_code();

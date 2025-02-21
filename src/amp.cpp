@@ -3,12 +3,14 @@
 /**
  * TODO: Immplement sptially coupled coding matrix 
  * TODO: Put the loops with the mose iterations to be inner
+ * TODO: template the class 
  */
-AMP::AMP(const int    &number_of_sections,
+template <typename T>
+AMP<T>::AMP(const int    &number_of_sections,
          const int    &section_size,
-         const data_t &power_allocation,
-         const data_t &rate,
-         const data_t &signal_to_noise_ration)
+         const T &power_allocation,
+         const T &rate,
+         const T &signal_to_noise_ration)
 
     : L(number_of_sections) // Number of sections
       ,B(section_size) // Section size
@@ -33,13 +35,14 @@ AMP::AMP(const int    &number_of_sections,
 /**
  * Method to generate standard sparse superposition code with fixed power allocation c 
  */
-void AMP::gen_sparse_code()
+template <typename T>
+void AMP<T>::gen_sparse_code()
 {
     // Generate a random index between 0 and section size
-    data_t lower_bound{0.0}; // Lower bound for the random number generator 
-    data_t upper_bound = static_cast<data_t>(B) - 1.0; // Upper bound 
+    T lower_bound{0.0}; // Lower bound for the random number generator 
+    T upper_bound = static_cast<T>(B) - 1.0; // Upper bound 
 
-    std::uniform_real_distribution<data_t> dist(lower_bound, upper_bound); // Distrubution of section indecies 
+    std::uniform_real_distribution<T> dist(lower_bound, upper_bound); // Distrubution of section indecies 
     // Iterate through the sections
     for (int i = 0; i < L; i++)
     {
@@ -54,10 +57,11 @@ void AMP::gen_sparse_code()
  * With random gaussian enteries with mean 0.0 and standard deviation 1 / sqrt(L)
  * 
  */
-void AMP::gen_design_matrix()
+template <typename T>
+void AMP<T>::gen_design_matrix()
 {
 
-    std::normal_distribution<data_t> dist(0.0, std_dev); // Normal distrubution 
+    std::normal_distribution<T> dist(0.0, std_dev); // Normal distrubution 
     /*
         Fill the matrix with gaussian enteries
     */
@@ -68,16 +72,17 @@ void AMP::gen_design_matrix()
  * Method to construct a corrupted codeword 
  * y = F.x + noise. The noise is a AWGN with mean 0.0 and variance inversly proptional to snr 
  */
-void AMP::gen_codeword()
+template <typename T>
+void AMP<T>::gen_codeword()
 {
 
-    data_t standard_deviation = 1.0 / std::sqrt(snr); // standard deviation of the AWGNC 
+    T standard_deviation = 1.0 / std::sqrt(snr); // standard deviation of the AWGNC 
 
-    std::normal_distribution<data_t> dist(0.0, standard_deviation); // Gaussian distrubution 
+    std::normal_distribution<T> dist(0.0, standard_deviation); // Gaussian distrubution 
 
 for (int mu = 0; mu < M; mu++) // Iterate the rows 
 {
-    data_t sum = 0.0;
+    T sum = 0.0;
     for (int i = 0; i < N; i++) // Iterates the columns 
     {
         sum += F[mu * N + i] * code_messgae[i]; // Generate a codeword
@@ -88,7 +93,8 @@ for (int mu = 0; mu < M; mu++) // Iterate the rows
 /**
  * Method to print the code message 
  */
-void AMP::print_code_message() const
+template <typename T>
+void AMP<T>::print_code_message() const
 {
     for (int i = 0; i < L; i++)
     {
@@ -102,7 +108,8 @@ void AMP::print_code_message() const
 /**
  * Method to print the corrupted codeword 
  */
-void AMP::print_code_word() const
+template <typename T>
+void AMP<T>::print_code_word() const
 {
     for (int i = 0; i < M; i++)
     {
@@ -113,7 +120,8 @@ void AMP::print_code_word() const
 /**
  * Method to print the coding matrix 
  */
-void AMP::print_design_matrix() const
+template <typename T>
+void AMP<T>::print_design_matrix() const
 {
 
     for (int mu = 0; mu < M; mu++) // Iterate over the rows 
@@ -130,11 +138,12 @@ void AMP::print_design_matrix() const
  * Method to to update the value of V
  * Equivelent to a matrix vector multiplication F**2.v 
  */
-void AMP::update_V(const std::vector<data_t> &v, std::vector<data_t> &V)
+template <typename T>
+void AMP<T>::update_V(const std::vector<T> &v, std::vector<T> &V)
 {
 for (int mu = 0; mu < M; mu++) // Iterate over the rows 
 {
-    data_t sum = 0.0;
+    T sum = 0.0;
     for (int i = 0; i < N; i++) // Iterate over columns 
     {
         sum += F[mu * N + i] * F[mu * N + i] * v[i]; // Perform the matrix vector multiplication 
@@ -146,11 +155,12 @@ for (int mu = 0; mu < M; mu++) // Iterate over the rows
 /**
  * Method to compute the Onsegar term of the algorithm
  */
-void AMP::compute_onsegar(const std::vector<data_t> &omega_old, const std::vector<data_t> &V_new, const std::vector<data_t> &V_old, const std::vector<data_t> &a_old, std::vector<data_t> &omega_new)
+template <typename T>
+void AMP<T>::compute_onsegar(const std::vector<T> &omega_old, const std::vector<T> &V_new, const std::vector<T> &V_old, const std::vector<T> &a_old, std::vector<T> &omega_new)
 {
     for (int mu = 0; mu < M; mu++) // Iterate over the rows 
     {
-        data_t sum = 0.0;
+        T sum = 0.0;
         for (int i = 0; i < N; i++) // Iterate over the columns 
         {
             sum += F[mu * N + i] * a_old[i];
@@ -161,12 +171,13 @@ void AMP::compute_onsegar(const std::vector<data_t> &omega_old, const std::vecto
 /**
  * Method to compute the cavity variance 
  */
-void AMP::compute_cavity_var(const std::vector<data_t> &V_new, std::vector<data_t> &sigma_new)
+template <typename T>
+void AMP<T>::compute_cavity_var(const std::vector<T> &V_new, std::vector<T> &sigma_new)
 {
 
     for (int i = 0; i < N; i++) // Iterate over the rows 
     {
-        data_t sum = 0.0;
+        T sum = 0.0;
         for (int mu = 0; mu < M; mu++) // Iterate over the columns 
         {
             sum += (F[mu * N + i] * F[mu * N + i]) / (snr_inv + V_new[mu]);
@@ -177,12 +188,13 @@ void AMP::compute_cavity_var(const std::vector<data_t> &V_new, std::vector<data_
 /**
  * Method to compute the cavity mean 
  */
-void AMP::compute_cavity_mean(const std::vector<data_t> &a_old, const std::vector<data_t> &sigma_new, const std::vector<data_t> &V_new, const std::vector<data_t> &omega_new, std::vector<data_t> &cavity_mean)
+template <typename T>
+void AMP<T>::compute_cavity_mean(const std::vector<T> &a_old, const std::vector<T> &sigma_new, const std::vector<T> &V_new, const std::vector<T> &omega_new, std::vector<T> &cavity_mean)
 {
 
     for (int i = 0; i < N; i++) // Iterate over the columns 
     {
-        data_t sum = 0.0;
+        T sum = 0.0;
         for (int mu = 0; mu < M; mu++) // Iterate over the rows 
         {
             sum += F[mu * N + i] * ((codeword[mu] - omega_new[mu]) / (snr_inv + V_new[mu]));
@@ -193,14 +205,15 @@ void AMP::compute_cavity_mean(const std::vector<data_t> &a_old, const std::vecto
 /**
  * Method to denoise the estimate of the code message 
  */
-void AMP::denoise_a(const std::vector<data_t> &sigma_new, const std::vector<data_t> &cavity_mean, std::vector<data_t> &a_new)
+template <typename T>
+void AMP<T>::denoise_a(const std::vector<T> &sigma_new, const std::vector<T> &cavity_mean, std::vector<T> &a_new)
 {
 
-    std::vector<data_t> exp_term(L);
+    std::vector<T> exp_term(L);
 
     for (int i = 0; i < L; i++) // Iterate over the sections 
     {
-        data_t sum = 0.0;
+        T sum = 0.0;
         for (int j = 0; j < B; j++) // Iterate over the elements of the section 
         {
             sum += std::exp(-c * (c - 2 * cavity_mean[i * B + j]) / (2 * sigma_new[i * B + j]));
@@ -217,7 +230,8 @@ void AMP::denoise_a(const std::vector<data_t> &sigma_new, const std::vector<data
 /**
  * Method to denoise the variance of the estimate of the message 
  */
-void AMP::denosie_v(const std::vector<data_t> &a_new, std::vector<data_t> &v_new)
+template <typename T>
+void AMP<T>::denosie_v(const std::vector<T> &a_new, std::vector<T> &v_new)
 {
     for (int i = 0; i < N; i++) // Iterate over the elements of the estimated message 
     {
@@ -228,9 +242,10 @@ void AMP::denosie_v(const std::vector<data_t> &a_new, std::vector<data_t> &v_new
  * Method to compute the difference between two estimation
  * Checks for convergence 
  */
-data_t AMP::compute_dif(const std::vector<data_t> &a_new, const std::vector<data_t> &a_old)
+template <typename T>
+T AMP<T>::compute_dif(const std::vector<T> &a_new, const std::vector<T> &a_old)
 {
-    data_t sum = 0.0;
+    T sum = 0.0;
     for (int i = 0; i < N; i++) // Iterate the code message size  
     {
         sum += (a_new[i] - a_old[i]) * (a_new[i] - a_old[i]);
@@ -240,13 +255,14 @@ data_t AMP::compute_dif(const std::vector<data_t> &a_new, const std::vector<data
 /**
  * Method to amplify the estimated message 
  */
-void AMP::amplify(std::vector<data_t> a_new, std::vector<data_t> &a_temp)
+template <typename T>
+void AMP<T>::amplify(std::vector<T> a_new, std::vector<T> &a_temp)
 {
     for (int i = 0; i < L; i++)
     {
-        data_t *row_begin = a_new.data() + i * B;
-        data_t *row_end = row_begin + B;
-        data_t *max_element = std::max_element(row_begin, row_end);
+        T *row_begin = a_new.data() + i * B;
+        T *row_end = row_begin + B;
+        T *max_element = std::max_element(row_begin, row_end);
 
         int max_idx = std::distance(row_begin, max_element);
 
@@ -256,9 +272,10 @@ void AMP::amplify(std::vector<data_t> a_new, std::vector<data_t> &a_temp)
 /**
  * Method to compute the mean square error between the estimated message and the code message 
  */
-data_t AMP::compute_mse(const std::vector<data_t> &a_new)
+template <typename T>
+T AMP<T>::compute_mse(const std::vector<T> &a_new)
 {
-    data_t err = 0.0;
+    T err = 0.0;
     for (int i = 0; i < N; i++) // Iterate the size of the code message 
     {
         err += (a_new[i] - code_messgae[i]) * (a_new[i] - code_messgae[i]);
@@ -269,9 +286,10 @@ data_t AMP::compute_mse(const std::vector<data_t> &a_new)
  * Method to compute the section error rate
  * The section error rate corresponds to the ratio of sections which are wrongly reconstructed 
  */
-data_t AMP::compute_ser(const std::vector<data_t> &a_temp)
+template <typename T>
+T AMP<T>::compute_ser(const std::vector<T> &a_temp)
 {
-    data_t ser_err; // Variable to hold the value of the section error rate
+    T ser_err; // Variable to hold the value of the section error rate
 
     int count = L; // Intially it is assumed that all secions are wrongly reconstructed 
     for (int i = 0; i < L; i++) // Loop over the number of sections 
@@ -289,44 +307,45 @@ data_t AMP::compute_ser(const std::vector<data_t> &a_temp)
             count--; // decrease the count of wrongly reconstructed sections by one 
         }
     }
-    ser_err = static_cast<data_t>(count);  // cast the type of the count to the data_t type 
+    ser_err = static_cast<T>(count);  // cast the type of the count to the T type 
     return ser_err; // Return the section error rate 
 }
 /**
  * Method that performs AMP decoding 
  */
-void AMP::solve(const int &t_max, const data_t &ep)
+template <typename T>
+void AMP<T>::solve(const int &t_max, const T &ep)
 {
 
-    std::vector<data_t> v_old(N, 1.0 / (B * snr));
-    std::vector<data_t> v_new(N, 1.0 / (B * snr));
+    std::vector<T> v_old(N, 1.0 / (B * snr));
+    std::vector<T> v_new(N, 1.0 / (B * snr));
 
-    std::vector<data_t> V_new(M); // vector to hold the result of the matrix multiplication
-    std::vector<data_t> V_old(M); // Old value of V
+    std::vector<T> V_new(M); // vector to hold the result of the matrix multiplication
+    std::vector<T> V_old(M); // Old value of V
 
-    std::vector<data_t> a_old(N, 0.0); // Store the estimation of the message
-    std::vector<data_t> a_new(N, 0.0); // Store the new estimation of the message
+    std::vector<T> a_old(N, 0.0); // Store the estimation of the message
+    std::vector<T> a_new(N, 0.0); // Store the new estimation of the message
 
-    std::vector<data_t> a_temp(N, 0.0); // Vector to store the amplified estimate of the message
+    std::vector<T> a_temp(N, 0.0); // Vector to store the amplified estimate of the message
                                         // Must be set to 0
 
-    std::vector<data_t> omega_old(codeword); // Old value of omega
-    std::vector<data_t> omega_new(codeword); // New value of omega
+    std::vector<T> omega_old(codeword); // Old value of omega
+    std::vector<T> omega_new(codeword); // New value of omega
 
-    std::vector<data_t> sigma_new(N);
-    std::vector<data_t> cavity_mean(N);
+    std::vector<T> sigma_new(N);
+    std::vector<T> cavity_mean(N);
 
     // Error threshold
-    data_t delta = ep + 1;
+    T delta = ep + 1;
 
     int t = 0;
 
-    data_t mse_err = 1.0;
+    T mse_err = 1.0;
 #ifdef MSE
     std::cout << "Iter," << " MSE\n";
     std::cout << t << " " << mse_err << "\n";
 #else
-    data_t ser_err = 1.0;
+    T ser_err = 1.0;
     std::cout << "Iter," << " SER\n";
     std::cout << t << ", " << ser_err << "\n";
 #endif

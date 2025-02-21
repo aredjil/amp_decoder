@@ -1,10 +1,5 @@
 #include "../include/amp.hpp"
 
-/**
- * TODO: Immplement sptially coupled coding matrix 
- * TODO: Put the loops with the mose iterations to be inner
- * TODO: template the class 
- */
 template <typename T>
 AMP<T>::AMP(const int    &number_of_sections,
          const int    &section_size,
@@ -79,7 +74,6 @@ void AMP<T>::gen_codeword()
     T standard_deviation = 1.0 / std::sqrt(snr); // standard deviation of the AWGNC 
 
     std::normal_distribution<T> dist(0.0, standard_deviation); // Gaussian distrubution 
-
 for (int mu = 0; mu < M; mu++) // Iterate the rows 
 {
     T sum = 0.0;
@@ -342,11 +336,11 @@ void AMP<T>::solve(const int &t_max, const T &ep)
 
     T mse_err = 1.0;
 #ifdef MSE
-    std::cout << "Iter," << " MSE\n";
-    std::cout << t << " " << mse_err << "\n";
+    std::cout << "Iter," << "MSE\n";
+    std::cout << t << ", " << mse_err << "\n";
 #else
     T ser_err = 1.0;
-    std::cout << "Iter," << " SER\n";
+    std::cout << "Iter," << "SER\n";
     std::cout << t << ", " << ser_err << "\n";
 #endif
     t++;

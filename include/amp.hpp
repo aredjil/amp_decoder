@@ -89,6 +89,8 @@ private:
     T snr_inv;  // Inverse of the snr
 
 };
-template class AMP<double>;
 template class AMP<float>;
+template class AMP<double>;
+template class AMP<long double>;
+
 #endif // AMP_H

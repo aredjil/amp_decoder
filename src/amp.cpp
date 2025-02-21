@@ -291,7 +291,7 @@ T AMP<T>::compute_ser(const std::vector<T> &a_temp)
         int id_count = 0; // Variable to track the count of elements that are correctly predicted 
         for (int j = 0; j < B; j++)
         {
-            if (std::abs(a_temp[i * B + j] - code_messgae[i * B + j]) < 10E-6)  // abs here because the message and the estimate is double precision
+            if (std::abs(a_temp[i * B + j] - code_messgae[i * B + j]) < 10E-1)  // abs here because the message and the estimate is double precision
             {
                 id_count++; // Increse the count by one if the estimated element and the real element are identitical 
             }

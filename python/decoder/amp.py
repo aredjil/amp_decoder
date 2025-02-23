@@ -1,20 +1,42 @@
 #!/usr/bin/python3
 import numpy as np
 class amp:
-  def __init__(self, L, B):
+  def __init__(self, 
+               L,   # Number of sections 
+               B,   # Section size  
+               snr, # Signal to nosie ratio 
+               R,   # Communication rate 
+               c,   # Power allocation 
+               seed =None # Random seed 
+               ):
     """
     FIXME: Fix the class :)  
+    1. Generalize the functions and choose better names for the variables  
     """
-    np.random.seed(0)
-    self.L = L
-    self.B = B
-    self.N = L * B
-    self.x = self.gen_ss()
+    if seed == None: 
+       seed = 42 
+    np.random.seed(seed=seed)
+    self.L = L     # Number of sections 
+    self.B = B     # Section size 
+    self.N = L * B # Size of the code message 
+    self.snr = snr # Signal to noise ratio
+    self.R = R     # Communication rate 
+    self.c = c     # Power allocation of the code message 
+    self.std = 1 / np.sqrt(snr) # standard deviation of the gaussian noise 
+    self.M = int((self.N * np.log2(self.B)) / (self.R * self.B)) # Length of the codeword 
+    self.x = self.gen_ss() # Ground truth message 
+    
 
-  def awgn_ch(self, snr):
-    self.snr = snr
-    self.M = int((self.N * np.log2(self.B)) / (self.R * self.B))
-    std = 1 / np.sqrt(snr)
+  def awgn_ch(self):
+    """
+    NOTE: Seperate the encoding and transimission into two functions
+    """
+    snr = self.snr 
+    M = self.M 
+    R = self.R
+    N = self.N 
+    std = self.std 
+
     x_gt = self.x.reshape(self.N)
     F = np.random.normal(0, 1/np.sqrt(self.L), (self.M, self.N))
     self.F = F
@@ -30,7 +52,6 @@ class amp:
     return x
 
   def g(self, z, y, V, snr):
-
     var = 1 / snr
     B = (y - z) / (V + var)
     return B
@@ -42,7 +63,9 @@ class amp:
     return A
 
   def denoising_a(self, x_hat, v, sigma, r, L, B, c=1):
-
+    """
+    Denoising the estimate of the message a and it's variance v 
+    """
     N = int(L * B)
     new_sigma = sigma.copy().reshape(L, B)
     new_r = r.copy().reshape(L, B)
@@ -82,11 +105,11 @@ class amp:
     idx = np.argmax(arr, axis=1)
     return idx
 
-  def decode(self, snr, R=1.3, t_max=25, ep=10**-8, c=1):
-
+  def decode(self, snr, t_max=25, ep=10**-8):
+    c = self.c 
     n = self.N
-    self.R = R
-    y = self.awgn_ch(snr)
+    R = self.R
+    y = self.awgn_ch()
     # Initialization
     delta = 1 + ep
     t = 0
@@ -116,15 +139,14 @@ class amp:
         r = x_hat_old + sigma ** 2 * (self.g(z, y, V, snr) @ self.F)
         # Creating copies of sigma and r arrays and reshaping them in order to use them in the denoisin function and update the estimates
         x_hat, v = self.denoising_a(x_hat, v, sigma, r, self.L , self.B, c)
-        delta = (1/n)* np.sum(np.square(x_hat-x_hat_old))
-        temp_err = self.section_error_rate(self.x, x_hat)
+        delta = (1/n)* np.sum(np.square(x_hat-x_hat_old)) # Checking for convergence 
+        temp_err = self.section_error_rate(self.x, x_hat) # Computing the section error rate 
         ser.append(temp_err)
         #ber.append(bit_error)
         t = t + 1
         if t > 2 * t_max:
             return ser
             break
-        #a_t.append(a)
     return ser
   
 if __name__ == "__main__":

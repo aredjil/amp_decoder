@@ -14,7 +14,6 @@
 #include <iomanip>       // Used for IO manipulation 
 #include <cassert>      // Assert expression used to make sure the section length and size are powers of 2 
 #include <chrono>      // Used to time the algorithm  
-#include<cblas.h>
 #include <type_traits> // To check the data type at compile time 
 
 typedef double data_t; 

@@ -1,5 +1,5 @@
 CC=g++
-LFLAGS=-lopenblas -O3 -march=native 
+LFLAGS= -O3 -march=native 
 CFLAGS= -I./include 
 
 all: main_ser.x main_mse.x 

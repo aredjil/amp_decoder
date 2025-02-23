@@ -1,6 +1,5 @@
-# /bin/env python3 
+#!/usr/bin/python3
 import numpy as np
-
 class amp:
   def __init__(self, L, B):
     """

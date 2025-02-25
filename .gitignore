@@ -1,7 +1,8 @@
 # Created by https://www.toptal.com/developers/gitignore/api/vs,visualstudiocode,visualstudio,linux,c++,cmake
 # Edit at https://www.toptal.com/developers/gitignore?templates=vs,visualstudiocode,visualstudio,linux,c++,cmake
 *figures 
-*data 
+*data
+*.x 
 ### C++ ###
 # Prerequisites
 *.d

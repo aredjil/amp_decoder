@@ -375,10 +375,7 @@ void AMP<T>::solve(const int &t_max, const T &ep)
 #endif
         // Check covnergence
         delta = compute_dif(a_new, a_old);
-        if (delta < ep)
-        {
-            break;
-        }
+
         // Swap new values and old ones for the next iteration
         v_old = v_new;
 

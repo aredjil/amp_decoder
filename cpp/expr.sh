@@ -1,12 +1,13 @@
 #! /bin/bash 
-mkdir -p data
-for L in 4096
+t_max=100 # Maximum number of iterations 
+L=8192 # Block length 
+make # Build the excutable 
+for r in 1.3 1.4 1.45 1.6    
 do
-    mkdir -p ./data/data_${L} 
-    for i in {0..100..1}
-    do 
-        ./main_mse.x -l ${L} -r 1.3 -t_max 30 > ./data/data_${L}/data_${L}_${i}.csv 
-    done 
+echo Using R = ${r}
+    # mkdir -p ./data/mse_${r}/mse_${L} 
+        # ./main_ser.x -l ${L} -r ${r} -t_max ${t_max} > ./data/ser_${r}.csv
+        ./main_mse.x -l ${L} -r ${r} -t_max ${t_max} > ./data/mse_${r}.csv 
 done 
 
 echo "Done!"

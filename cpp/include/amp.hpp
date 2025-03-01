@@ -19,6 +19,10 @@
 typedef double data_t; 
 
 /**
+ * NOTE: Immplement the coupled matrix
+ * NOTE: Immplement the Hadmadar operator 
+ */
+/**
  * AMP class 
  */
 template <typename T>

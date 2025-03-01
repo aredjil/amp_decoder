@@ -1,4 +1,7 @@
 #! /bin/bash 
+# Expriement one, different communication rate for a fixed 
+# Block length and block size :) 
+
 t_max=100 # Maximum number of iterations 
 L=8192 # Block length 
 make # Build the excutable 
@@ -11,3 +14,5 @@ echo Using R = ${r}
 done 
 
 echo "Done!"
+
+python visualize_data.py

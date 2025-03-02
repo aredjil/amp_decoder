@@ -2,13 +2,18 @@ import pandas as pd
 import numpy as np 
 import matplotlib.pyplot as plt  
 import os 
-
+import sys 
 def main():
-    L = 8192  # Message Length
+    L = 16384  # Message Length or double 
+    argc = len(sys.argv)
+    for i in range(1, argc, 1):
+        if sys.argv[i] == "-l" and i + 1 < argc: 
+            i+=1
+            L = int(sys.argv[i])
     rates = [1.3, 1.4, 1.45, 1.6]
-    
-    data_dir = "./data"
-    figures_dir = "./figures"
+    bs = [100] 
+    data_dir = "./data/exp3/"
+    figures_dir = "./figures/exp3"
     if not os.path.exists(figures_dir):
         try:
             os.mkdir(figures_dir)
@@ -19,15 +24,15 @@ def main():
 
     # Process MSE data
     plt.figure()  # Create a new figure for MSE
-    for r in rates:
-        data_file = os.path.join(data_dir, f"mse_{r}.csv")
+    for b in bs:
+        data_file = os.path.join(data_dir, f"mse_{b}.csv")
         df = pd.read_csv(data_file)
-        plt.plot(df["MSE"], label=f"{r}", ls="--")
+        plt.plot(df["MSE"], label=f"{b}", ls="--", lw=1.0)
         plt.xlabel("Iteration")
         plt.ylabel("MSE")
         plt.grid(True, which="both", ls="-")
         plt.yscale("log")
-        plt.legend(title="Communication Rate", loc="best", fontsize='small', fancybox=True)
+        plt.legend(title="Section Size", loc="best", fontsize='small', fancybox=True)
     plt.xlim(0,)
     plt.title(f"Mean Square Error (MSE) Vs number of iterations")
     plt.tight_layout()
@@ -38,15 +43,15 @@ def main():
 
     # Process SER data
     plt.figure()  # Create a new figure for SER
-    for r in rates:
-        data_file = os.path.join(data_dir, f"ser_{r}.csv")
+    for b in bs:
+        data_file = os.path.join(data_dir, f"ser_{b}.csv")
         df = pd.read_csv(data_file)
-        plt.plot(df["SER"], label=f"{r}", ls="--")
+        plt.plot(df["SER"], label=f"{b}", ls="--", lw=1.0)
         plt.xlabel("Iteration")
         plt.ylabel("SER")
         plt.grid(True, which="both", ls="-")
         plt.yscale("log")
-        plt.legend(title="Communication Rate", loc="best", fontsize='small', fancybox=True)
+        plt.legend(title="Section Size", loc="best", fontsize='small', fancybox=True)
     plt.xlim(0,)
     plt.title(f"Section Error Rate (SER) Vs number of iterations")
     plt.tight_layout()

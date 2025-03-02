@@ -5,7 +5,7 @@
 t_max=100 # Maximum number of iterations 
 L=8192 # Block length 
 make # Build the excutable 
-for r in 1.3 1.4 1.45 1.6    
+for r in 1.3    
 do
 echo Using R = ${r}
         ./main_ser.x -l ${L} -r ${r} -t_max ${t_max} > ./data/ser_${r}.csv

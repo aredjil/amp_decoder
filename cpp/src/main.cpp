@@ -15,14 +15,14 @@ bool is_power_of_two(int n){
 
 int main(int argc, char **argv)
 {
-    std::cout<<std::fixed<<std::setprecision(4); // Set the precision of the output 
+    std::cout<<std::fixed<<std::setprecision(12); // Set the precision of the output 
     // Deafult values of the paramters that will be passed to the AMP class 
     int num_sections{1024};      // Number of sections per message
     int section_size{4};      // Size of a single section
     const data_t power_allocation{1.0}; // Power allocation value
     data_t comm_rate{1.4};
     data_t snr{15.0};
-    data_t ep{1E-4};
+    data_t ep{1E-12};
     int t_max{25};
     // Get the paramters from the user 
     for (int i = 1; i < argc; i++)

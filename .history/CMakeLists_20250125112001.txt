@@ -1,0 +1,32 @@
+cmake_minimum_required(VERSION 3.10)
+project(AmpProject)
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED True)
+
+
+# Find the BLAS library
+find_package(BLAS REQUIRED)
+
+option(PRINT_C "Print Code" OFF)
+if(PRINT_C)
+    message("Custom feature is enabled!")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DPRINT_C")
+else()
+    message("Custom feature is disabled!")
+endif()
+
+option(PRINT_F"Print F" OFF)
+if(PRINT_F)
+    message("Custom feature is enabled!")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DPRINT_F")
+else()
+    message("Custom feature is disabled!")
+endif()
+# Include directories
+include_directories(include)
+
+
+# Add executable
+add_executable(main.x src/main.cpp)
+
+

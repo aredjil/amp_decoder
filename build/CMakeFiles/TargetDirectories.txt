@@ -1,3 +1,0 @@
-/home/aredjil/Documents/github_repos/amp_decoder/build/CMakeFiles/main.x.dir
-/home/aredjil/Documents/github_repos/amp_decoder/build/CMakeFiles/edit_cache.dir
-/home/aredjil/Documents/github_repos/amp_decoder/build/CMakeFiles/rebuild_cache.dir

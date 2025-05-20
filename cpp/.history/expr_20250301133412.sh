@@ -1,0 +1,13 @@
+#! /bin/bash 
+t_max=100 # 
+L=8192
+make 
+for r in 1.45   
+do
+echo Using R = ${r}
+    # mkdir -p ./data/mse_${r}/mse_${L} 
+        ./main_ser.x -l ${L} -r ${r} -t_max ${t_max} > ./data/ser_${r}.csv
+        # ./main_mse.x -l ${L} -r ${r} -t_max ${t_max} > ./data/mse_${r}/mse_${L}/mse_${L}_${i}.csv 
+done 
+
+echo "Done!"

@@ -1,0 +1,3 @@
+CC=g++
+LFLAGS=-lopenblas -O3 -march=native  
+main.x: main.cpp

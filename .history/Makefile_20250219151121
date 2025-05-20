@@ -1,0 +1,12 @@
+CC=g++
+LFLAGS=-lopenblas -O3 -march=native 
+CFLAGS= -I./include 
+
+main_ser.x: src/main.cpp src/amp.cpp
+	$(CC) $(CFLAGS) $^ -o $@ $(LFLAGS)
+main_mse.x: src/main.cpp src/amp.cpp
+	$(CC) $(CFLAGS) $^ -o $@ $(LFLAGS)
+clean:
+	rm *.x 
+	rm -r data 
+	rm -r figures 

@@ -1,0 +1,8 @@
+CC=g++
+LFLAGS=-lopenblas -O3 -march=native 
+CFLAGS= -I./include 
+
+main.x: src/main.cpp
+	$(CC) $(CFLAGS) $< -o $@ $(CFLAGS)
+clean:
+	rm *.x *.o

@@ -1,0 +1,7 @@
+CC=g++
+LFLAGS=-lopenblas -O3 -march=native 
+CFLAGS= -I./include 
+
+main.x: main.cpp
+	$(CC) $(CFLAGS) $< -o $@ $(CFLAGS)
+
